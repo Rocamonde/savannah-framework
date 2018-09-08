@@ -1,0 +1,38 @@
+/* Default settings file */
+
+/* add required config values as they come */
+
+{
+  "workflow": {
+    "live_update": true,
+    "require_auth": false,
+    "temp_data": {
+      "enable": false,
+      "path": "temp/", /* always relative to config file */
+      "frequency": null /* null for savannah-managed dumping or time in seconds */
+    },
+    "server": {
+      "address": {
+        "host": "local", /* either local -> 127.0.0.1, or remote (defaults to static ip) */
+        "port": 5555
+      }
+    },
+
+    "localui": {
+      "enable": false,
+      "address": {
+        "host": "192.168.1.20", /* this requires static IP assignment */
+        "port": 8000
+      }
+    }
+  },
+
+  "enabled_sensors": {
+    /* somehow include enabled sensors here and reconcile it with the way sensors.py works */
+  },
+
+  "info": {
+    "project_name": "Savannah",
+    "project_owner": "Juan Carlos Rocamonde"
+  }
+}
