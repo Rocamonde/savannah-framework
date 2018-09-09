@@ -3,7 +3,7 @@
 #
 
 
-from typing import NamedTuple, Union, Callable
+from typing import NamedTuple, Union, Dict
 
 #
 # **Format spacing:**
@@ -65,9 +65,15 @@ class Workflow(NamedTuple):
 
 workflow: Workflow = Workflow()
 
+class Sensors(NamedTuple):
+    # Drivers for enabled sensors must be defined in drivers.py
+    enabled_sensors: list = []
 
-# Drivers for enabled sensors must be defined in drivers.py
-enabled_sensors: list = []
+    class SensorSettings(NamedTuple):
+        frequency: float = None
+
+    custom_settings: Dict[str, SensorSettings] = {}
+sensors: Sensors = Sensors()
 
 class Info(NamedTuple):
     project_name: str = 'Savannah'
@@ -79,13 +85,13 @@ info: Info = Info()
 #
 
 enabled_fields = (
-    'workflow', 'enabled_sensors', 'info',
+    'workflow', 'sensors', 'info'
 )
+
 
 #<end>
 # *.*.*-----------------------------------------------------------------------------------*.*.*
 
-MisconfiguredSettings: Exception
 BASEDIR: str
 CONFIG_PATH: str
 
@@ -95,8 +101,6 @@ CONFIG_PATH: str
 
 if __name__ == '__main__':
     import json
-    import sys
-    sys.path.append('C:\\Users\\pc\\PyCharmProjects\\teleboard\\src\\savannah\\')
     from savannah.extensions.tupperware import unbox
 
     __vars = {key: unbox(val) for key, val in globals().items() if key in enabled_fields}
