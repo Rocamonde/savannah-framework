@@ -23,8 +23,7 @@ class Thread(AsyncWrapper):
             self.implement_manager(manager)
 
     def start(self, **kwargs) -> None:
-        target = self.task if not isinstance(self, LoopMixin) else getattr(self, '_thread_target')
-        self.__thread = threading.Thread(target=target,
+        self.__thread = threading.Thread(target=self.fetch_target(),
                                          kwargs=kwargs,
                                          name=self.name)
 
@@ -40,8 +39,8 @@ class Thread(AsyncWrapper):
                          receiver=self.manager.find_by_name(receiver_name))
         self.manager.communicate(m)
 
-    def wait(self):
-        self.thread.join()
+    def wait(self, timeout=None):
+        self.thread.join(timeout=timeout)
 
     @property
     def thread(self) -> threading.Thread:

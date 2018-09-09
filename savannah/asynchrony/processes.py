@@ -56,7 +56,11 @@ class Process(AsyncWrapper):
                                     name=self.name)
 
         self.__process.daemon = self.is_daemon  # Daemonize thread
-        self.__process.start()  # Start the execp
+        try:
+            self.__process.start()  # Start the execp
+        except TypeError as exc:
+            raise TypeError("A TypeError while starting the process has occurred."
+                            "Have you forgot to decorate the task with @staticmethod?") from exc
 
     def wait(self, timeout=None) -> bool:
         """Thought to be used as: `try: if self.wait(): STMT; STMT; except: STMT`"""
