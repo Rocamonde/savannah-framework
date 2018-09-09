@@ -101,6 +101,9 @@ CONFIG_PATH: str
 
 if __name__ == '__main__':
     import json
+    import sys
+    # ONLY FOR DEBUG
+    sys.path.append("C:/Users/pc/PycharmProjects/savannah")
     from savannah.core.extensions.tupperware import unbox
 
     __vars = {key: unbox(val) for key, val in globals().items() if key in enabled_fields}

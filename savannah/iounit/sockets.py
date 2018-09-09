@@ -58,7 +58,7 @@ class CPUServer:
         self.curr_addr = self.curr_conn = None
         self.close_flag = False
 
-        self.__subprocess: threads.Thread = None
+        self.__thread: threads.Thread = None
 
         self.socket.bind((self.host, self.port))
 
@@ -114,20 +114,24 @@ class CPUServer:
         self.__listen()
 
         # Este loop sí bloquea el flujo, por lo que aquí es cuando es necesario incluirlo en un subproceso.
-        self.__subprocess = CPUServer.BackgroundLoop(self)
-        self.__subprocess.start()
+        self.__thread = CPUServer.BackgroundLoop(self)
+        self.__thread.start()
 
     def close(self, timeout=None):
         self.close_flag = True
         # el añadir esta bandera finaliza el loop, pero tenemos que esperar hasta que termine la última conexión;
         # por ello usamos .join()
-        self.__subprocess.thread.join(timeout=timeout)
+        self.__thread.thread.join(timeout=timeout)
 
         # Al terminal el hilo se cierra el socket.
         self.socket.close()
 
     def interpret(self, message: str) -> str:
         return self.__interpreter.interpret(message)
+
+    @property
+    def thread(self) -> threads.Thread:
+        return self.__thread
 
 
 class CPUClient:
