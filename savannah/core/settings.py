@@ -3,7 +3,7 @@
 #
 
 import os
-from savannah.core.extensions import Configuration
+from savannah.core.extensions.config import Configuration
 from savannah.core.exceptions import UndefinedEnvironment
 
 try:
@@ -19,4 +19,4 @@ _config_obj = Configuration(config_path=CONFIG_PATH)
 # reference to the root variables:
 workflow = None; enabled_sensors = None; info = None
 
-globals().update(_config_obj.as_dict)
+globals().update(_config_obj.data._asdict())

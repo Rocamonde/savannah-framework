@@ -1,13 +1,13 @@
 import importlib.util
-from os import path
+import os
 from savannah.core import settings
 from savannah.core.blanks import drivers, interpreter
 
 
-def load_module(module_name, file_name=None, path=None):
-    if not (file_name or path): raise TypeError("File name or path are required.")
-    path = path or path.join(settings.BASEDIR, file_name)
-    spec = importlib.util.spec_from_file_location(module_name, path)
+def load_module(module_name, file_name=None, file_path=None):
+    if not (file_name or file_path): raise TypeError("File name or path are required.")
+    file_path = file_path or os.path.join(settings.BASEDIR, file_name)
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

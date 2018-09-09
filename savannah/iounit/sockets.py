@@ -11,7 +11,8 @@ from typing import *
 from enum import Enum
 
 from savannah.asynchrony import threads
-from savannah.iounit.interpreter import CommandInterpreter, EvaluationException
+from savannah.iounit.interpreter import CommandInterpreter
+from savannah.core.interpreter import EvaluationException
 
 __all__ = ['CPUServer', 'CPUClient', 'Utils', 'ConnStatus']
 

@@ -4,6 +4,7 @@ from os import environ
 from os.path import join, dirname, realpath
 import subprocess
 from dataclasses import dataclass
+import ipaddress
 
 from savannah.core.interpreter import BaseInterpreter
 from savannah.core.exceptions import MisconfiguredSettings
@@ -64,26 +65,43 @@ class Run(Command):
     @staticmethod
     def start_savannah(serverhost: str = None, serverport=None, uihost=None, uiport=None):
         from savannah.core import settings
-        from savannah.core.units import IOUnit
+        from savannah.core.units import IOUnit, LocalUIUnit, AuthUnit, UploaderUnit
 
         # Address fetching
         try:
-            _iounitaddr = (settings.workflow.server.address.host, int(settings.workflow.server.address.port))
-            _uiaddr = (settings.workflow.localui.address.host, int(settings.workflow.localui.address.port))
+            settings_addr = {}
+            settings_addr['iounit'] = _get_split_pair(serverhost, serverport) if serverhost else \
+                (settings.workflow.server.address.host, int(settings.workflow.server.address.port))
+
+            if settings.workflow.localui.enabled:
+                settings_addr['localui'] = _get_split_pair(uihost, uiport) if uihost else \
+                    (settings.workflow.localui.address.host, int(settings.workflow.localui.address.port))
+
+            validated_settings_addr = _validate_addr(settings_addr)
+
         except TypeError:
             raise MisconfiguredSettings("Invalid data types in settings.json")
+        except AttributeError:
+            raise MisconfiguredSettings("Missing required configuration properties.")
 
-        iounitaddr = _get_split_pair(serverhost, serverport) if serverhost else _iounitaddr
-        uiaddr = _get_split_pair(uihost, uiport) if uihost else _uiaddr
 
         # Initialize IOUnit
-        iounit = IOUnit(*iounitaddr)
+        iounit = IOUnit(*validated_settings_addr['iounit'])
         iounit.init()
 
-        # Initialize
-
+        # Initialize LocalUI
+        # TODO: in production, environments with LocalUI should perform a preload
+        # TODO  ...to wait while the program loads
         if settings.workflow.localui.enabled:
-            pass
+            localui = LocalUIUnit()
+            localui.init()
+
+        # Initialize live upload
+        # TODO: for the environments that produce upload upon-request,
+        # TODO  ...a different approach must be taken
+        if settings.workflow.live_upload:
+            uploader_unit = UploaderUnit()
+            uploader_unit.init() # TODO: this does not resolve, make init a valid method
 
 
 class CreateSettings(Command):
@@ -126,3 +144,18 @@ def _get_split_pair(host: str, port: str = None):
         return host.split(':')[0], int(host.split(':')[1])
     except IndexError:
         return host, int(port)
+
+def _validate_addr(d: dict):
+    _d = {}
+    for k,v in d.items():
+        _d[k] = (_validate_ip(v[0]), v[1])
+    return _d
+
+def _validate_ip(ip):
+    try:
+        ipaddress.ip_address(ip)
+        return ip
+    except ValueError as exc:
+        if ip == 'local': return '127.0.0.1'
+        if ip == 'remote': raise ValueError("Python cannot fetch your machine's IP readily. "
+                                            "Please specify the explicit IP for the machine.") from exc

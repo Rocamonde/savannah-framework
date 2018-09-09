@@ -59,7 +59,7 @@ class Workflow(NamedTuple):
         class Address(NamedTuple):
             host: str = 'local'
             port: bool = 8000
-        address = Address()
+        address: Address = Address()
 
     localui: LocalUI = LocalUI()
 

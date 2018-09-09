@@ -35,14 +35,18 @@ class Configuration:
 
     def __init__(self, config_path: str = None):
         if config_path and not self.__path_exists(config_path):
-            raise OSError("Invalid path to configuration file.")
+            raise OSError("Invalid path to configuration file.\n"
+                          "If settings.json does not exist in your project directory, "
+                          "You can create it by running: python manage.py create-settings")
 
         self.config_path = config_path
 
         self.__data: dict = self.__load() if config_path else dict()
 
     def __load(self, path: str = None):
-        return json.load((path or self.config_path))
+        with open((path or self.config_path), "rb") as file:
+            out = json.load(file)
+        return out
 
     def load(self, config_path: str):
         self.__init__(config_path)
