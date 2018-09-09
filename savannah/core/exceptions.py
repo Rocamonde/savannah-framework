@@ -4,6 +4,7 @@ class SamplingUnitNotRunning(Exception):
         super().__init__(msg, *args, **kwargs)
 
 class UndefinedEnvironment(Exception):
-    def __init__(self, msg='', *args, **kwargs):
-        msg = '{}'.format(msg)
-        super().__init__(msg, *args, **kwargs)
+    pass
+
+class MisconfiguredSettings(Exception):
+    pass
