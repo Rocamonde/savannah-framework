@@ -3,7 +3,7 @@
 #
 
 import os
-from savannah.extensions.config import Configuration
+from savannah.core.extensions import Configuration
 from savannah.core.exceptions import UndefinedEnvironment
 
 try:

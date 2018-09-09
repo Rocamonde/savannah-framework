@@ -2,7 +2,6 @@ import argparse
 from typing import Union
 import json
 
-from savannah.extensions.interpreter import *
 from savannah.sampling import SamplingManager
 from savannah.core import exceptions
 

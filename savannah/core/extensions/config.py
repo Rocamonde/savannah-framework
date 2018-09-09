@@ -1,9 +1,9 @@
 
 import json
 import os
-from typing import Dict, Union
+from typing import Dict
 
-from savannah.extensions.tupperware import box, Box
+from savannah.core.extensions.tupperware import box, Box
 
 
 class Configuration:

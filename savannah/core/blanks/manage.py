@@ -1,4 +1,5 @@
 import sys
+import os
 
 if __name__ == '__main__':
     try:
@@ -9,4 +10,6 @@ if __name__ == '__main__':
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
-    execute_from_command_line(sys.argv)
+
+    _argv = sys.argv; _argv[0] = os.path.realpath(__file__)
+    execute_from_command_line(_argv)

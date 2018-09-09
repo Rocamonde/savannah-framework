@@ -6,7 +6,7 @@ from os.path import join, dirname, realpath
 import subprocess
 from enum import Enum
 
-from savannah.extensions.interpreter import BaseInterpreter
+from savannah.core.extensions.interpreter import BaseInterpreter
 from savannah.core.exceptions import MisconfiguredSettings
 
 #
