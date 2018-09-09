@@ -1,4 +1,4 @@
-
+from typing import NamedTuple
 
 __all__ =  ["Sensor", "PortNotOpenError"]
 
@@ -8,17 +8,16 @@ class PortNotOpenError(Exception):
 
 # TODO: buscar manera de implementar esta clase con cada driver específico sin tener que reescribir todo el código
 
+
+
 class Sensor:
     """
     Clase genérica de un sensor. Puede abrir puertos, cerrarlos y leer información de ellos.
     Debe ser extendido para poder implementarlo.
     """
 
-    # Las siguientes variables son para ser reemplazadas al extender la clase.
-    SENSOR_MAX_FREQUENCY: float = None      #  Frecuencia máxima de muestreo
-    SENSOR_DEFAULT_FREQUENCY: float = None  #  Frecuencia por defecto de muestreo
-    # En condiciones normales, la frecuencia por defecto del sensor debería ser la apropiada,
-    # excepto que sea estrictamente necesario especificar una personalizada.
+    SENSOR_MAX_FREQUENCY: float = None
+    SENSOR_DEFAULT_FREQUENCY: float = None
 
     MAGNITUDES_VERBOSE: tuple = None
 
@@ -26,9 +25,10 @@ class Sensor:
     def name(cls) -> str:
         return cls.__name__
 
-    def __init__(self):
+    def __init__(self, settings: NamedTuple = None):
         # self.port = None
         self.__is_open = False
+        self.settings: NamedTuple = None
 
 
     @property
