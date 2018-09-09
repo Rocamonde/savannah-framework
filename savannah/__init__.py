@@ -11,7 +11,7 @@
 __version__ = "0.1a"
 
 __name__ = "savannah"
-__description__ = "Data sampling and transmition from embedded controllers."
+__description__ = "Data sampling and transmission from embedded controllers."
 __uri__ = ""
 
 __author__ = "Juan Carlos Rocamonde"

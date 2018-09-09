@@ -20,7 +20,3 @@ _config_obj = Configuration(config_path=CONFIG_PATH)
 workflow = None; enabled_sensors = None; info = None
 
 globals().update(_config_obj.as_dict)
-
-
-
-class MisconfiguredSettings(Exception): pass

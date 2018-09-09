@@ -4,10 +4,10 @@ import sys
 from os import environ
 from os.path import join, dirname, realpath
 import subprocess
-from typing import Union, Iterable
 from enum import Enum
 
 from savannah.extensions.interpreter import BaseInterpreter
+from savannah.core.exceptions import MisconfiguredSettings
 
 #
 # Recognise commands
@@ -85,21 +85,22 @@ def get_split_pair(host: str, port: str = None):
         return host, int(port)
 
 def start_savannah(serverhost: str = None, serverport=None, uihost=None, uiport=None):
-    from savannah.core import settings, iounit
+    from savannah.core import settings
+    from savannah.core.units import IOUnit
 
     # Address fetching
     try:
         _iounitaddr = (settings.workflow.server.address.host, int(settings.workflow.server.address.port))
         _uiaddr = (settings.workflow.localui.address.host, int(settings.workflow.localui.address.port))
     except TypeError:
-        raise settings.MisconfiguredSettings
+        raise MisconfiguredSettings("Invalid data types in settings.json")
 
     iounitaddr = get_split_pair(serverhost, serverport) if serverhost else _iounitaddr
     uiaddr = get_split_pair(uihost, uiport) if uihost else _uiaddr
 
 
     # Initialize IOUnit
-    iounit = iounit.IOUnit(*iounitaddr)
+    iounit = IOUnit(*iounitaddr)
     iounit.init()
 
     # Initialize
