@@ -11,7 +11,6 @@ setup(name=__name__,
           'savannah',
       ],
       install_requires=[
-          'pandas', 'numpy', 'multiprocessing_on_dill'
-          # This last does not work, find way to run script
+          'pandas', 'numpy', 'networkx'
       ],
       zip_safe=False)

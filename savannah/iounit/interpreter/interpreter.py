@@ -3,7 +3,8 @@ from typing import Union
 import json
 
 from savannah.sampling import SamplingManager
-from savannah.core import exceptions
+from savannah.core.exceptions import *
+from savannah.core.interpreter import *
 
 __all__ = [
     "CommandInterpreter", "Utils",
@@ -63,9 +64,9 @@ class CommandInterpreter(AbstractBaseInterpreter):
             try:
                 sm = super().__getattribute__(item)
                 if sm is None:
-                    raise exceptions.SamplingUnitNotRunning("SamplingManager attribute not found")
+                    raise SamplingUnitNotRunning("SamplingManager attribute not found")
             except AttributeError:
-                raise exceptions.SamplingUnitNotRunning("SampingManager attribute not found")
+                raise SamplingUnitNotRunning("SampingManager attribute not found")
         return super().__getattribute__(item)
 
 
