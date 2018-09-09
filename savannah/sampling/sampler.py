@@ -1,45 +1,54 @@
-import random
-import os
-from pandas import DataFrame
-import datetime
+import os, sys, random, pickle, datetime, csv
 from base64 import b32encode
 from dataclasses import dataclass
-import typing
-from pickle import dump, dumps
 from io import BytesIO
+from typing import *
+
+from pandas import DataFrame
+# TODO CHANGE THIS
+from multiprocessing import Queue
 
 from savannah.asynchrony import threads
 from savannah.sampling import drivers
+from savannah.core.exceptions import MisconfiguredSettings
 
+# TODO: what's left: implement periodic uploder/file saver.
 
 __all__ = [
-    "NoStorageMethodIOError", "SensorEnvironment", "SensorBaseReader", "SensorSampler", "SamplingManager", "Utils"
+    "NoStorageMethod",
+    "SensorEnvironment", "SensorBaseReader", "SensorSampler", "SamplingManager", "Utils"
 ]
 
-"""
-######     Exceptions     ######
-"""
+#
+# Exceptions
+#
 
 
-class NoStorageMethodIOError(IOError):
+class NoStorageMethod(IOError):
     def __init__(self, *args, **kwargs):
-        super(NoStorageMethodIOError, self).__init__(
+        super(NoStorageMethod, self).__init__(
             'No storage method specified. Can\'t save file',
             *args, **kwargs
         )
 
 
-"""
-######     Classes     ######
-"""
+#
+# Classes
+#
 
 
 @dataclass
 class SensorEnvironment:
     init_stamp: str
     filename: str
-    FILE_BASE: str
+    filepath: str
 
+
+# TODO: check this in LINUX (what os.W_OK does)
+def _eval_path(a, b):
+    if sys.platform == 'win32':
+        return a and b
+    return b
 
 class SensorBaseReader:
     """
@@ -52,42 +61,79 @@ class SensorBaseReader:
 
     stamp_format = '{0:%Y%m%d%H%M%S}'
 
-    def __init__(self, sensor: drivers.Sensor, svdsk: bool = False, svmem: bool = True):
+    def __init__(self, sensor: drivers.Sensor, save_to_disk: bool = None, save_in_mem: bool = None):
+        from savannah.core import settings
 
-        if not (svdsk or svmem):
-            raise NoStorageMethodIOError
+        # Using a lists provides:
+        #   - Fast resize (no need for pre-allocation)
+        #   - Pass-by-reference slicing
+        #   - Easy data conversion
+        # Note: data is 1-indexed because first row are the column titles.
 
-        # El módulo sensor es de donde se muestrean los datos.
+        self.__data: list = [(*self.sensor.MAGNITUDES_VERBOSE, 'timestamp',), ]
         self.sensor = sensor
+        self.__dump: bool = False
 
-        # Utilizar una lista es lo más eficiente porque:
-        #     Es capaz de ampliar el espacio de manera dinámica con gran rapidez
-        #     Al seleccionar un fragmento, se copia la referencia, no el valor
-        #     Es sencillo manipular listas y convertirlas a arrays de numpy o a dataframes
         #
-        # Nota: la primera fila de la lista es el título, y es el índice 0, por lo que los datos tienen numeración
-        # 1-indexada.
+        # Data storage configuration
+        #
 
-        self.__data: list = [(*self.sensor.MAGNITUDES_VERBOSE, 'timestamp', ), ]
-        self.__svdsk = svdsk
-        self.__svmem = svmem
+        cnf = self.sensor.settings._asdict()
 
-        if svmem:
+        try:
 
-            init_stamp = SensorBaseReader.stamp_format.format(datetime.datetime.now())
-            filename = '{sensor}_{fname}.csv'.format(
-                sensor=self.sensor.name(),
-                fname=b32encode(init_stamp.encode()).decode()
-            )
+            # Logical order of decision:
+            #   1. Sensor settings if exists (defined in settings.json, loaded externally)
+            #   2. SensorBaseReader init arguments if exists
+            #   3. Settings fallback if exists
+            #       - If settings not exists, raise MisconfiguredSettings
+            #
+            # A last option could be added, which would be a framework default.
+            # This would catch the AttributeError
 
-            self.environment = SensorEnvironment(
-                init_stamp=init_stamp,
-                filename=filename,
-                FILE_BASE=os.path.join(settings.TEMP_PATH, filename)
-            )
+            # Ternary operator must explicitly evaluate None identity since we are handling bools
+            self.__svdsk = cnf.get('svdsk',
+                (save_to_disk if save_to_disk is None else settings.workflow.temp_data.enable))
 
-        # if svdsk:
-        #    self.file: BytesIO = None
+            self.__svmem = cnf.get('svmem',
+                (save_in_mem if save_in_mem is None else settings.workflow.live_upload))
+
+
+            if not (self.__svdsk or self.__svmem):
+                # Technically, there could be a storage method if this is implemented explicitly.
+                # However, in principle the sensor must either save to a file to then upload or
+                # Upload real time. To modify this, one should catch the error in instantiation.
+                raise NoStorageMethod
+            else:
+                self.__dump = True
+
+            if save_to_disk:
+                temp_path_base = os.path.join(settings.BASEDIR, settings.workflow.temp_data.path)
+
+                init_stamp = SensorBaseReader.stamp_format.format(datetime.datetime.now())
+                filename = '{sensor}_{fname}.csv'.format(
+                    sensor=self.sensor.name(),
+                    fname=b32encode(init_stamp.encode()).decode()
+                )
+
+                temp_path = os.path.join(temp_path_base, filename)
+
+                if not _eval_path(os.path.exists(temp_path_base), os.access(temp_path_base, os.W_OK)):
+                    raise IOError("Temporary path does not exist or is not writable.")
+
+                self.environment = SensorEnvironment(
+                    init_stamp=init_stamp,
+                    filename=filename,
+                    filepath=temp_path,
+                )
+                # Virtual file for real-time writing
+                self.file: BytesIO = BytesIO()
+
+            if save_in_mem:
+                self.queue = Queue()
+
+        except AttributeError:
+            raise MisconfiguredSettings("Missing required configuration properties.")
 
     def __sread(self):
         """
@@ -98,45 +144,38 @@ class SensorBaseReader:
 
         # response, errors =   self.sensor.communicate()
 
-        # Por ahora vamos a generar números aleatorios para esta implementación concreta.
+        # TODO: replace this
         return (random.random() * 100, random.random())
 
     def update(self):
         # Rationale: se añade una tupla porque es más eficiente que una lista (el número de columnas no va a variar)
         # (la escalabilidad no es horizontal, sino vertical)
-        self.__data.append((*self.__sread(), datetime.datetime.now()))
+        read = (*self.__sread(), datetime.datetime.now())
+        self.__data.append(read)
+        if self.__dump:
+            self.dump(read)
 
-    def finalize(self):
-        df = DataFrame(self.data)
-        r1, r2 = (None, None)
-        if self.svdsk:
-            try:
-                with open(self.environment.FILE_BASE, 'wb') as file:
-                    dump(df, file)
-                    r1 = self.environment.FILE_BASE
-            except IOError:
-                pass
-        if self.svmem:
-            r2 = BytesIO(dumps(df))
-
-        del(self.__data, df)
-        return (r1, r2) if (r1 and r2) else (r1 or r2)
 
     def retrieve_last(self, key):
         return {'last_key': len(self.data)-1,
                 'data': self.data[(key+1 if key else 0):]}
 
-    @property
-    def svdsk(self) -> bool:
-        return self.__svdsk
+    def dump(self, obj: Iterable):
+        if self.__svdsk:
+                # this always appends
+                _writer = csv.writer(self.file, delimiter=',')
+                _writer.writerow(obj)
+        if self.__svmem:
+            self.queue.put(obj)
 
     @property
-    def svmem(self) -> bool:
-        return self.__svmem
+    def svdsk(self) -> bool: return self.__svdsk
 
     @property
-    def data(self) -> typing.List[typing.Tuple]:
-        return self.__data
+    def svmem(self) -> bool: return self.__svmem
+
+    @property
+    def data(self) -> typing.List[typing.Tuple]: return self.__data
 
 
 class SensorSampler(threads.ThreadedLoop):
@@ -150,23 +189,19 @@ class SensorSampler(threads.ThreadedLoop):
 
     """
 
-    def __init__(self, reader: SensorBaseReader, sampling_frequency=None):
+    def __init__(self, reader: SensorBaseReader):
         self.reader = reader
-
-        # Sampling frequency can be specified in instantiation
-        # or default frequency falls back.
-        if not sampling_frequency:
-            self.frequency = self.reader.sensor.SENSOR_DEFAULT_FREQUENCY
+        self.sampling_frequency = self.reader.sensor.settings._asdict().get(
+            'FREQUENCY',
+            self.reader.sensor.SENSOR_DEFAULT_FREQUENCY)
 
         # Boundary conditions for valid frequency
-        elif isinstance(sampling_frequency, (int, float)) and \
-                0 < sampling_frequency <= self.reader.sensor.SENSOR_DEFAULT_FREQUENCY:
-            self.frequency = sampling_frequency
-        else:
+        if not isinstance(self.sampling_frequency, (int, float)) and \
+                0 < self.sampling_frequency <= self.reader.sensor.SENSOR_DEFAULT_FREQUENCY:
             raise ValueError("Sampling frequency must be an integer or float in the interval ]0, {max}]".format(
-                max=self.reader.sensor.SENSOR_DEFAULT_FREQUENCY))
+                max=self.reader.sensor.SENSOR_MAX_FREQUENCY))
 
-        super(SensorSampler, self).__init__(interval=1/self.frequency, name=self.reader.sensor.name())
+        super(SensorSampler, self).__init__(interval=1/self.sampling_frequency, name=self.reader.sensor.name())
 
     def task(self):
         self.reader.update()
@@ -182,7 +217,8 @@ class Utils:
     # En condiciones normales, la frecuencia por defecto del sensor debería ser la apropiada,
     # excepto que sea estrictamente necesario especificar una personalizada.
     # Por ello no se permite la inclusión del parámetro frecuencia.
-    samplers = lambda sensors_list: [SensorSampler(SensorBaseReader(_)) for _ in sensors_list]
+    make_sampler = lambda sensor: SensorSampler(SensorBaseReader(sensor))
+    make_samplers = lambda sensor_list: [Utils.make_sampler(_) for _ in sensor_list]
 
 
 
