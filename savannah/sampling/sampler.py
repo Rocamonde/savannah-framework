@@ -4,11 +4,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from typing import *
 
-from pandas import DataFrame
-# TODO CHANGE THIS
-from multiprocessing import Queue
-
-from savannah.asynchrony import threads
+from savannah.asynchrony import threads, processes
 from savannah.sampling import drivers
 from savannah.core.exceptions import MisconfiguredSettings
 
@@ -16,7 +12,7 @@ from savannah.core.exceptions import MisconfiguredSettings
 
 __all__ = [
     "NoStorageMethod",
-    "SensorEnvironment", "SensorBaseReader", "SensorSampler", "SamplingManager", "Utils"
+    "SensorEnvironment", "SensorReader", "SensorSampler", "SamplingManager", "Utils"
 ]
 
 #
@@ -26,7 +22,7 @@ __all__ = [
 
 class NoStorageMethod(IOError):
     def __init__(self, *args, **kwargs):
-        super(NoStorageMethod, self).__init__(
+        super().__init__(
             'No storage method specified. Can\'t save file',
             *args, **kwargs
         )
@@ -50,7 +46,7 @@ def _eval_path(a, b):
         return a and b
     return b
 
-class SensorBaseReader:
+class SensorReader:
     """
     Clase para leer información directamente del sensor.
     Esta clase solamente lee datos, no opera con ellos ni automatiza la lectura.
@@ -84,7 +80,7 @@ class SensorBaseReader:
 
             # Logical order of decision:
             #   1. Sensor settings if exists (defined in settings.json, loaded externally)
-            #   2. SensorBaseReader init arguments if exists
+            #   2. SensorReader init arguments if exists
             #   3. Settings fallback if exists
             #       - If settings not exists, raise MisconfiguredSettings
             #
@@ -105,12 +101,15 @@ class SensorBaseReader:
                 # Upload real time. To modify this, one should catch the error in instantiation.
                 raise NoStorageMethod
             else:
+                # Flag for dumping
                 self.__dump = True
+                # Queue where to store data
+                self.queue: processes.mp.Queue = None
 
             if save_to_disk:
                 temp_path_base = os.path.join(settings.BASEDIR, settings.workflow.temp_data.path)
 
-                init_stamp = SensorBaseReader.stamp_format.format(datetime.datetime.now())
+                init_stamp = SensorReader.stamp_format.format(datetime.datetime.now())
                 filename = '{sensor}_{fname}.csv'.format(
                     sensor=self.sensor.name(),
                     fname=b32encode(init_stamp.encode()).decode()
@@ -126,11 +125,6 @@ class SensorBaseReader:
                     filename=filename,
                     filepath=temp_path,
                 )
-                # Virtual file for real-time writing
-                self.file: BytesIO = BytesIO()
-
-            if save_in_mem:
-                self.queue = Queue()
 
         except AttributeError:
             raise MisconfiguredSettings("Missing required configuration properties.")
@@ -153,20 +147,12 @@ class SensorBaseReader:
         read = (*self.__sread(), datetime.datetime.now())
         self.__data.append(read)
         if self.__dump:
-            self.dump(read)
+            self.queue.put(read)
 
 
     def retrieve_last(self, key):
         return {'last_key': len(self.data)-1,
                 'data': self.data[(key+1 if key else 0):]}
-
-    def dump(self, obj: Iterable):
-        if self.__svdsk:
-                # this always appends
-                _writer = csv.writer(self.file, delimiter=',')
-                _writer.writerow(obj)
-        if self.__svmem:
-            self.queue.put(obj)
 
     @property
     def svdsk(self) -> bool: return self.__svdsk
@@ -175,10 +161,13 @@ class SensorBaseReader:
     def svmem(self) -> bool: return self.__svmem
 
     @property
-    def data(self) -> typing.List[typing.Tuple]: return self.__data
+    def data(self) -> List[Tuple]: return self.__data
 
 
 class SensorSampler(threads.ThreadedLoop):
+    """
+    Threaded sampling that constantly records data from a sensor through the SensorReader
+    """
 
     """
     Esta clase permite crear un thread como un daemon que corre simultáneamente con el resto del código.
@@ -189,7 +178,7 @@ class SensorSampler(threads.ThreadedLoop):
 
     """
 
-    def __init__(self, reader: SensorBaseReader):
+    def __init__(self, reader: SensorReader):
         self.reader = reader
         self.sampling_frequency = self.reader.sensor.settings._asdict().get(
             'FREQUENCY',
@@ -201,10 +190,17 @@ class SensorSampler(threads.ThreadedLoop):
             raise ValueError("Sampling frequency must be an integer or float in the interval ]0, {max}]".format(
                 max=self.reader.sensor.SENSOR_MAX_FREQUENCY))
 
-        super(SensorSampler, self).__init__(interval=1/self.sampling_frequency, name=self.reader.sensor.name())
+        super().__init__(
+            interval=1/self.sampling_frequency,
+            name=self.reader.sensor.name(),
+            is_daemon=False)
 
     def task(self):
         self.reader.update()
+
+    def _loop_target(self, queue_proxy):
+        self.reader.queue = queue_proxy
+        super()._loop_target()
 
 
 class SamplingManager(threads.ReverseManagerMixin):
@@ -217,7 +213,7 @@ class Utils:
     # En condiciones normales, la frecuencia por defecto del sensor debería ser la apropiada,
     # excepto que sea estrictamente necesario especificar una personalizada.
     # Por ello no se permite la inclusión del parámetro frecuencia.
-    make_sampler = lambda sensor: SensorSampler(SensorBaseReader(sensor))
+    make_sampler = lambda sensor: SensorSampler(SensorReader(sensor))
     make_samplers = lambda sensor_list: [Utils.make_sampler(_) for _ in sensor_list]
 
 
