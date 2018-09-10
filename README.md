@@ -1,6 +1,6 @@
 Savannah: real-time, adaptable telemetry framework
 ==================================================
 
-![alt text](https://img.shields.io/badge/tests-passing-brightgreen.svg "tests: passing")
+[![tests: passing](https://img.shields.io/badge/tests-passing-brightgreen.svg "tests: passing")](https://github.com/Rocamonde/savannah-framework/tree/master/tests)
 
 Savannah is a framework built for real-time data harvesting in different environments.
