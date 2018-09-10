@@ -25,10 +25,10 @@ class Sensor:
     def name(cls) -> str:
         return cls.__name__
 
-    def __init__(self, settings: NamedTuple = None):
+    def __init__(self, settings: dict = None):
         # self.port = None
         self.__is_open = False
-        self.settings: NamedTuple = None
+        self.settings = settings or dict()
 
 
     @property

@@ -1,7 +1,7 @@
 import argparse
 from typing import Union, Iterable
 import json
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 
 from savannah.sampling import SamplingManager
 
@@ -46,8 +46,14 @@ class InvalidArgumentsError(EvaluationException):
 # Classes
 #
 
+class TypeABI(ABCMeta):
+    def __call__(self, *args, **kwargs):
+        obj = super().__call__(*args, **kwargs)
+        if hasattr(obj, '__map__'): obj.__map__()
+        return obj
 
-class AbstractBaseInterpreter(ABC):
+
+class AbstractBaseInterpreter(metaclass=TypeABI):
     def __init__(self, *args, **kwargs):
         self.stdparser = argparse.ArgumentParser(*args, **kwargs)
         self.__configure__()
@@ -75,7 +81,7 @@ class AbstractBaseInterpreter(ABC):
         pass
 
     def interpret(self, content: Union[str, Iterable]):
-        self.execute(self.__parse__(content))
+        return self.execute(self.__parse__(content))
 
 
 class BaseInterpreter(AbstractBaseInterpreter):

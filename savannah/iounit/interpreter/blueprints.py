@@ -7,14 +7,13 @@
 
 import json
 
-from .interpreter import CommandInterpreter
+from .interpreter import CPUInterpreter
 
 
-class JSONUpdatesMixin(CommandInterpreter):
+class JSONUpdatesMixin(CPUInterpreter):
     def __init__(self, *args, **kwargs):
-
         super().__init__(*args, **kwargs)
-        self.mapped_commands['updates'] = self.updates
+        self.mapped_commands.update({'updates': self.updates })
 
     def updates(self, last_key: dict = None):
         """
@@ -25,10 +24,9 @@ class JSONUpdatesMixin(CommandInterpreter):
 
         This is useful for web interfaces.
         """
-
         last_key = last_key or dict()
         response = {sensor_name: sampler.reader.retrieve_last(last_key.get(sensor_name, None))
-                    for sensor_name, sampler in self.sampling_manager.processes_dict.items()}
+                    for sensor_name, sampler in self.sampling_manager.wrappers_dict.items()}
 
         # Careful: dates are not dumped to JSON standard format. It must be parsed.
         # TODO: change this

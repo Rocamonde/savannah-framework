@@ -7,14 +7,14 @@ from savannah.core.exceptions import *
 from savannah.core.interpreter import *
 
 __all__ = [
-    "CommandInterpreter", "Utils",
+    "CPUInterpreter", "Utils",
 ]
 
 
-class CommandInterpreter(AbstractBaseInterpreter):
+class CPUInterpreter(AbstractBaseInterpreter):
     def __init__(self, sampling_manager: SamplingManager = None):
         super().__init__()
-        self.mapped_commands: dict = None  # Must be replaced with a command mapping to instance methods
+        self.mapped_commands = {}
         self.verify_data_types = True
         self.sampling_manager = sampling_manager
 
@@ -36,7 +36,7 @@ class CommandInterpreter(AbstractBaseInterpreter):
 
     def execute(self, namespace: argparse.Namespace) -> Union[str, UnrecognizedCommandError]:
         try:
-            argstr = namespace.kwargs.strip()
+            argstr = namespace.kwargs.strip() if namespace.kwargs else str()
             parsed_args = Utils.parse_argstr(argstr) if argstr is not str() else None  # (empty str)
             selected_func: function = self.mapped_commands[namespace.command]
 

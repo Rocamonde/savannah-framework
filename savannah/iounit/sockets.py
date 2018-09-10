@@ -11,7 +11,7 @@ from typing import *
 from enum import Enum
 
 from savannah.asynchrony import threads
-from savannah.iounit.interpreter import CommandInterpreter
+from savannah.iounit.interpreter import CPUInterpreter
 from savannah.core.interpreter import EvaluationException
 
 __all__ = ['CPUServer', 'CPUClient', 'Utils', 'ConnStatus']
@@ -48,7 +48,7 @@ ConnStatus = ConnectionResponseStatus  # Alias
 #
 
 class CPUServer:
-    def __init__(self, host, port, interpreter: CommandInterpreter, backlog=4):
+    def __init__(self, host, port, interpreter: CPUInterpreter, backlog=4):
         self.__interpreter = interpreter
 
         self.socket = socket.socket()
@@ -127,7 +127,7 @@ class CPUServer:
         # Al terminal el hilo se cierra el socket.
         self.socket.close()
 
-    def interpret(self, message: str) -> str:
+    def interpret(self, message: str):
         return self.__interpreter.interpret(message)
 
     @property

@@ -1,14 +1,12 @@
 import os, sys, random, pickle, datetime, csv
 from base64 import b32encode
 from dataclasses import dataclass
-from io import BytesIO
 from typing import *
 
 from savannah.asynchrony import threads, processes
 from savannah.sampling import drivers
 from savannah.core.exceptions import MisconfiguredSettings
 
-# TODO: what's left: implement periodic uploder/file saver.
 
 __all__ = [
     "NoStorageMethod",
@@ -65,16 +63,15 @@ class SensorReader:
         #   - Pass-by-reference slicing
         #   - Easy data conversion
         # Note: data is 1-indexed because first row are the column titles.
-
-        self.__data: list = [(*self.sensor.MAGNITUDES_VERBOSE, 'timestamp',), ]
         self.sensor = sensor
+        self.__data: list = [(*self.sensor.MAGNITUDES_VERBOSE, 'timestamp',), ]
         self.__dump: bool = False
 
         #
         # Data storage configuration
         #
 
-        cnf = self.sensor.settings._asdict()
+        cnf = self.sensor.settings
 
         try:
 
@@ -89,10 +86,10 @@ class SensorReader:
 
             # Ternary operator must explicitly evaluate None identity since we are handling bools
             self.__svdsk = cnf.get('svdsk',
-                (save_to_disk if save_to_disk is None else settings.workflow.temp_data.enable))
+                (save_to_disk if save_to_disk is not None else settings.workflow.temp_data.enable))
 
             self.__svmem = cnf.get('svmem',
-                (save_in_mem if save_in_mem is None else settings.workflow.live_upload))
+                (save_in_mem if save_in_mem is not None else settings.workflow.live_upload))
 
 
             if not (self.__svdsk or self.__svmem):
@@ -169,18 +166,9 @@ class SensorSampler(threads.ThreadedLoop):
     Threaded sampling that constantly records data from a sensor through the SensorReader
     """
 
-    """
-    Esta clase permite crear un thread como un daemon que corre simultáneamente con el resto del código.
-    El thread incorpora un loop que está constantemente sampleando datos excepto que se ejecute el comando
-    self.stop(). Si esto último es así, si ya se ha entrado en el loop en el momento de ejecución y el programa
-    está durmiendo, esperará a que termine para parar. Esto puede modificarse y matar el proceso, pero como el archivo
-    de datos se guarda de manera independiente, no es necesario para seguir procesando la información.
-
-    """
-
     def __init__(self, reader: SensorReader):
         self.reader = reader
-        self.sampling_frequency = self.reader.sensor.settings._asdict().get(
+        self.sampling_frequency = self.reader.sensor.settings.get(
             'FREQUENCY',
             self.reader.sensor.SENSOR_DEFAULT_FREQUENCY)
 
@@ -204,15 +192,12 @@ class SensorSampler(threads.ThreadedLoop):
 
 
 class SamplingManager(threads.ReverseManagerMixin):
-    def start_all(self):
+    def start_all(self, sampling_proxies):
         for sampler in self.wrappers_list:
-            sampler.start()
+            sampler.start(queue_proxy=sampling_proxies[sampler.reader.sensor.name()])
 
 
 class Utils:
-    # En condiciones normales, la frecuencia por defecto del sensor debería ser la apropiada,
-    # excepto que sea estrictamente necesario especificar una personalizada.
-    # Por ello no se permite la inclusión del parámetro frecuencia.
     make_sampler = lambda sensor: SensorSampler(SensorReader(sensor))
     make_samplers = lambda sensor_list: [Utils.make_sampler(_) for _ in sensor_list]
 

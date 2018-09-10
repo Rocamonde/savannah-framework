@@ -92,16 +92,16 @@ class Run(Command):
         # Initialize LocalUI
         # TODO: in production, environments with LocalUI should perform a preload
         # TODO  ...to wait while the program loads
-        if settings.workflow.localui.enabled:
-            localui = LocalUIUnit()
-            localui.init()
+        #if settings.workflow.localui.enabled:
+        #    localui = LocalUIUnit()
+        #    localui.init()
 
         # Initialize live upload
         # TODO: for the environments that produce upload upon-request,
         # TODO  ...a different approach must be taken
-        if settings.workflow.live_upload:
-            uploader_unit = UploaderUnit()
-            uploader_unit.init() # TODO: this does not resolve, make init a valid method
+        #if settings.workflow.live_upload:
+        #    uploader_unit = UploaderUnit()
+        #    uploader_unit.init() # TODO: this does not resolve, make init a valid method
 
 
 class CreateSettings(Command):
