@@ -4,6 +4,7 @@ import os
 from typing import Dict
 
 from savannah.core.extensions.tupperware import box, Box
+from savannah.core.exceptions import MisconfiguredSettings
 
 
 class Configuration:
@@ -45,7 +46,10 @@ class Configuration:
 
     def __load(self, path: str = None):
         with open((path or self.config_path), "rb") as file:
-            out = json.load(file)
+            try:
+                out = json.load(file)
+            except json.decoder.JSONDecodeError as exc:
+                raise MisconfiguredSettings("The settings.json file does not have a valid JSON format.") from exc
         return out
 
     def load(self, config_path: str):

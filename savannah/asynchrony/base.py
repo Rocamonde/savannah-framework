@@ -1,6 +1,7 @@
 import time
 from typing import TypeVar, Any, Dict, Iterable, Union
 from abc import abstractmethod, ABC
+import warnings
 
 
 __all__ = [
@@ -192,7 +193,7 @@ class LoopMixin(AsyncWrapper):
     def stop(self):
         if self.__cont: self.__cont = False
         else:
-            raise RuntimeWarning("Async object has already been stopped.")
+            warnings.warn("Async object has already been stopped.", RuntimeWarning)
 
     @property
     def continue_flag(self) -> bool:
@@ -230,10 +231,10 @@ class Manager(ABC):
 
         self.__wrappers[wrapper.name] = wrapper
 
-    def start_all(self):
+    def start_all(self, *args, **kwargs):
         # Only use if strictly explicit
         for wrapper in self.wrappers_list:
-            wrapper.start()
+            wrapper.start(*args, **kwargs)
 
 
 class ReverseManagerMixin(Manager):

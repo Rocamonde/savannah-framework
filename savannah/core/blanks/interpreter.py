@@ -3,12 +3,12 @@
 #
 # Usage:
 #
-# class CommandInterpreter(BaseCommandInterpreter):
+# class CPUInterpreter(BaseCommandInterpreter):
 #     def __init__(self, sampling_manager):
-#         super(CommandInterpreter, self).__init__(sampling_manager)
+#         super(CPUInterpreter, self).__init__(sampling_manager)
 #
 #         self.mapped_commands = {
-#             # define mapped commands here, referencing CommandInterpreter
+#             # define mapped commands here, referencing CPUInterpreter
 #             # Reference must not be executed.
 #             # Key name must correspond to the name of a method.
 #
@@ -34,12 +34,12 @@
 # Incorrect usage can result in invalid ORM schemes.
 #
 
-from savannah.iounit.interpreter import CommandInterpreter as BaseCommandInterpreter
+from savannah.iounit.interpreter import CPUInterpreter as BaseCommandInterpreter
 
 
 class CommandInterpreter(BaseCommandInterpreter):
     def __init__(self, sampling_manager):
-        super(CommandInterpreter, self).__init__(sampling_manager)
+        super().__init__(sampling_manager)
 
         self.mapped_commands = {
         }
