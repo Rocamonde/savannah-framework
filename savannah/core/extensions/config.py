@@ -49,7 +49,7 @@ class Configuration:
             try:
                 out = json.load(file)
             except json.decoder.JSONDecodeError as exc:
-                raise MisconfiguredSettings("The settings.json file does not have a valid JSON format.") from exc
+                raise MisconfiguredSettings(MisconfiguredSettings.missing) from exc
         return out
 
     def load(self, config_path: str):

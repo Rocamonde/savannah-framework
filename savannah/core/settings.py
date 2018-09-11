@@ -17,6 +17,6 @@ _config_obj = Configuration(config_path=CONFIG_PATH)
 
 # For the stub to work, we just have to make a first
 # reference to the root variables:
-workflow = None; enabled_sensors = None; info = None
+workflow = None; enabled_sensors = None; info = None; log = None
 
 globals().update(_config_obj.data._asdict())
