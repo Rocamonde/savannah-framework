@@ -1,24 +1,26 @@
 import unittest
 from savannah.asynchrony import processes
 from savannah.asynchrony.pipes import PipeWrapper
-from multiprocessing.connection import PipeConnection
-from multiprocessing.managers import Namespace
+from multiprocessing_on_dill.managers import Namespace
 import time
 import random
 
-"""
-Test cases
-"""
-
 
 class EmptyTestProcess(processes.Process):
-    def task(self, **kwargs):
+    @staticmethod
+    def task(**kwargs):
         pass
 
 class NamespaceTestProcess(processes.Process):
     @staticmethod
     def task(**kwargs):
         print(kwargs)
+
+class EnvironProcess(processes.Process):
+    @staticmethod
+    def task():
+        import os
+        print(os.environ.get("var"))
 
 class SenderProcess(processes.Process):
     @staticmethod
@@ -46,7 +48,7 @@ class ReceiverProcess(processes.Process):
         namespace.msg['ReceiverProcess'] = msg
 
 
-class ProcessWrapper(unittest.TestCase):
+class ProcessTest(unittest.TestCase):
     def test_processes_are_unique(self):
         manager = processes.ReverseProcessManager()
         self.assertRaises(processes.WrapperNameError,
@@ -89,6 +91,13 @@ class ProcessWrapper(unittest.TestCase):
 
         self.assertIs(all((sender.wait(timeout=2), receiver.wait(timeout=2))), True)
         self.assertEqual(*[msg for msg in manager.namespace.msg.values()])
+
+    def test_environ(self):
+        import os
+        os.environ["var"] = "This is a var"
+        p = EnvironProcess()
+        p.start()
+
 
 
 #
