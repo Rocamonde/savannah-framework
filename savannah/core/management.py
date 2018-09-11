@@ -8,9 +8,7 @@ import ipaddress
 
 from savannah.core.interpreter import BaseInterpreter
 from savannah.core.exceptions import MisconfiguredSettings
-
-
-# TODO: print result of command-line calls.
+from savannah.core.logging import logger
 
 #
 # Recognise commands
@@ -35,7 +33,15 @@ class CLInterpreter(BaseInterpreter):
         super().__init__(prog='python manage.py')
 
     def __configure__(self):
-        self.stdparser.add_argument('command', nargs='+')
+        from savannah import __version__, __name__
+        #self.stdparser.add_argument('command', nargs='+',
+        #                             help='Command to be executed.', choices=['run', 'create-settings'])
+
+        self.stdparser.add_argument('-v', '--version', action='version',
+                                    version='%(prog)s agent for {n} {v}'.format(v=__version__, n=__name__),
+                                    help="Show program's version number and exit.")
+
+        subparser = self.stdparser.add_subparsers() # title, description, help
 
     def execute(self, namespace: argparse.Namespace):
         commands = namespace.__dict__.get('command')
@@ -54,18 +60,43 @@ class Command(BaseInterpreter):
 
 class Run(Command):
     def __configure__(self):
-        self.stdparser.add_argument('-sh', '--serverhost', nargs='?')
-        self.stdparser.add_argument('-sp', '--serverport', nargs='?')
-        self.stdparser.add_argument('--uihost', nargs='?')
-        self.stdparser.add_argument('--uiport', nargs='?')
+
+        self.stdparser.add_argument('-sh', '--serverhost', nargs='?',
+                                    help='CPUServer host. Either \'<host>\' or \'<host>:<port>\'.')
+
+        self.stdparser.add_argument('-sp', '--serverport', nargs='?', help='CPUServer port.')
+
+        self.stdparser.add_argument('--uihost', nargs='?',
+                                    help='User Interface host. Either \'<host>\' or \'<host>:<port>\'. '
+                                    'localui must be enabled in settings.')
+
+        self.stdparser.add_argument('--uiport', nargs='?', help='User Interface port.')
+
+        self.stdparser.add_argument('-l', '--logmode', nargs='?',
+                                    help=('Indicate log mode. \'brief\' and \'detailed\' save to log files.'
+                                          'Log path must be configured in settings. '),
+                                    choices=['console', 'brief', 'detailed'])
 
     def execute(self, namespace: argparse.Namespace):
         self.start_savannah(**namespace.__dict__)
 
     @staticmethod
-    def start_savannah(serverhost: str = None, serverport=None, uihost=None, uiport=None):
+    def start_savannah(serverhost: str = None, serverport=None, uihost=None, uiport=None, logmode=None):
         from savannah.core import settings
         from savannah.core.units import IOUnit, LocalUIUnit, AuthUnit, UploaderUnit
+
+        #
+        # We set the log mode
+
+        if logmode == 'brief':
+            environ.update({
+                'LOG_DO_BRIEF': '1'
+            })
+        elif logmode in ('detailed', 'extended'):  # Both terms are sufficiently intuitive for command line
+            environ.update({
+                'LOG_DO_BRIEF': '1',
+                'LOG_DO_DETAILED': '1',
+            })
 
         # Address fetching
         try:
@@ -80,9 +111,9 @@ class Run(Command):
             validated_settings_addr = _validate_addr(settings_addr)
 
         except TypeError:
-            raise MisconfiguredSettings("Invalid data types in settings.json")
+            raise MisconfiguredSettings(MisconfiguredSettings.data_types)
         except AttributeError:
-            raise MisconfiguredSettings("Missing required configuration properties.")
+            raise MisconfiguredSettings(MisconfiguredSettings.missing)
 
 
         # Initialize IOUnit
@@ -118,8 +149,18 @@ class CreateSettings(Command):
         p = subprocess.Popen([sys.executable, stub_file], stdout=subprocess.PIPE, bufsize=1)
         out = p.stdout.read()
 
-        with open(join(environ['SAVANNAH_BASEDIR'], 'settings.json'), "wb") as file:
+        CONFIG_PATH = join(environ['SAVANNAH_BASEDIR'], 'settings.json')
+        # We can't use settings import to load the config path at this point
+        # since we are trying to create the settings.
+        # An import fix could enable config path loading even if settings.json does not exist
+        # However, this could have repercussions in the way the rest of the modules
+        # are used (expecting that settings are configured when they are not),
+        # for this reason it is wiser to just define the variable at this scope.
+
+        with open(CONFIG_PATH, "wb") as file:
             file.write(out)
+
+        logger.info("Settings have been created at {}".format(CONFIG_PATH))
 
 
 @dataclass
