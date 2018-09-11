@@ -5,8 +5,9 @@ from os.path import join, dirname, realpath
 import subprocess
 from dataclasses import dataclass
 import ipaddress
+from typing import Mapping, Iterable
 
-from savannah.core.interpreter import BaseInterpreter
+from savannah.core.interpreter import AbstractBaseInterpreter
 from savannah.core.exceptions import MisconfiguredSettings
 from savannah.core.logging import logger
 
@@ -22,41 +23,37 @@ def execute_from_command_line(argv):
 
     environ['SAVANNAH_BASEDIR'] = dirname(argv[0])
 
-    interpreter = CLInterpreter(argv[1:])
-    interpreter.run()
+    interpreter = CLInterpreter()
+    interpreter.run(argv[1:])
 
 
-class CLInterpreter(BaseInterpreter):
+class CLInterpreter(AbstractBaseInterpreter):
 
     def __init__(self, argv=None):
-        self.argv = argv or sys.argv[1:]
-        super().__init__(prog='python manage.py')
+        super().__init__(prog='manage.py')
 
     def __configure__(self):
         from savannah import __version__, __name__
-        #self.stdparser.add_argument('command', nargs='+',
-        #                             help='Command to be executed.', choices=['run', 'create-settings'])
 
-        self.stdparser.add_argument('-v', '--version', action='version',
+        self.parser.add_argument('-v', '--version', action='version',
                                     version='%(prog)s agent for {n} {v}'.format(v=__version__, n=__name__),
                                     help="Show program's version number and exit.")
 
-        subparser = self.stdparser.add_subparsers() # title, description, help
+        subparser = self.parser.add_subparsers() # title, description, help
+        # Configure here rest of subparsers
+    def __parse__(self, content: Iterable, *args, **kwargs) -> argparse.Namespace:
+        pass
 
-    def execute(self, namespace: argparse.Namespace):
-        commands = namespace.__dict__.get('command')
-        subparser: BaseInterpreter = mapped_commands[commands[0]](commands[1:])
-        subparser.run()
+    def __interpret__(self, namespace: argparse.Namespace):
+        pass
+
+    def __execute__(self, method_name: str, kwargs: Mapping):
+        pass
 
 
 #
 # Define commands
 #
-
-class Command(BaseInterpreter):
-    def __init__(self, argv):
-        self.argv = argv
-        super().__init__()
 
 class Run(Command):
     def __configure__(self):
@@ -77,11 +74,9 @@ class Run(Command):
                                           'Log path must be configured in settings. '),
                                     choices=['console', 'brief', 'detailed'])
 
-    def execute(self, namespace: argparse.Namespace):
-        self.start_savannah(**namespace.__dict__)
 
     @staticmethod
-    def start_savannah(serverhost: str = None, serverport=None, uihost=None, uiport=None, logmode=None):
+    def action(serverhost: str = None, serverport=None, uihost=None, uiport=None, logmode=None):
         from savannah.core import settings
         from savannah.core.units import IOUnit, LocalUIUnit, AuthUnit, UploaderUnit
 
@@ -136,14 +131,9 @@ class Run(Command):
 
 
 class CreateSettings(Command):
-    def __configure__(self):
-        pass
-
-    def execute(self, namespace: argparse.Namespace):
-        self.do_create_settings()
 
     @staticmethod
-    def do_create_settings():
+    def action():
         stub_file = join(dirname(realpath(__file__)), 'settings.pyi')
         # Process is run from current executable to ensure that Savannah is installed
         p = subprocess.Popen([sys.executable, stub_file], stdout=subprocess.PIPE, bufsize=1)
