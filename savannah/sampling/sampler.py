@@ -6,6 +6,7 @@ from typing import *
 from savannah.asynchrony import threads, processes
 from savannah.sampling import drivers
 from savannah.core.exceptions import MisconfiguredSettings
+from savannah.core.logging import logger
 
 
 __all__ = [
@@ -114,6 +115,8 @@ class SensorReader:
 
                 temp_path = os.path.join(temp_path_base, filename)
 
+                # We raise this error here and not let it raise naturally because file
+                # is accessed after some data has already been generated, and it would be lost.
                 if not _eval_path(os.path.exists(temp_path_base), os.access(temp_path_base, os.W_OK)):
                     raise IOError("Temporary path does not exist or is not writable.")
 
@@ -124,7 +127,7 @@ class SensorReader:
                 )
 
         except AttributeError:
-            raise MisconfiguredSettings("Missing required configuration properties.")
+            raise MisconfiguredSettings(MisconfiguredSettings.missing)
 
     def __sread(self):
         """
@@ -188,6 +191,7 @@ class SensorSampler(threads.ThreadedLoop):
 
     def _loop_target(self, queue_proxy):
         self.reader.queue = queue_proxy
+        logger.info("Sensor {name} has started sampling at a frequency {freq}".format(name=self.reader.sensor.name(), freq=self.sampling_frequency))
         super()._loop_target()
 
 

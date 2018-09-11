@@ -75,6 +75,15 @@ class Sensors(NamedTuple):
     custom_settings: Dict[str, SensorSettings] = {}
 sensors: Sensors = Sensors()
 
+class Log(NamedTuple):
+    class LogType(NamedTuple):
+        path: str = 'log/'
+        enabled: bool = True
+
+    brief: LogType = LogType()
+    detailed: LogType = LogType()
+log: Log = Log()
+
 class Info(NamedTuple):
     project_name: str = 'Savannah'
     project_owner: str = 'Juan Carlos Rocamonde'
@@ -85,7 +94,7 @@ info: Info = Info()
 #
 
 enabled_fields = (
-    'workflow', 'sensors', 'info'
+    'workflow', 'sensors', 'log', 'info',
 )
 
 

@@ -13,6 +13,7 @@ from enum import Enum
 from savannah.asynchrony import threads
 from savannah.iounit.interpreter import CPUInterpreter
 from savannah.core.interpreter import EvaluationException
+from savannah.core.logging import logger
 
 __all__ = ['CPUServer', 'CPUClient', 'Utils', 'ConnStatus']
 
@@ -83,11 +84,14 @@ class CPUServer:
 
                 # The following statement blocks:
                 self._mother.curr_conn, self._mother.curr_addr = curr_conn, curr_addr = self._mother.socket.accept()
+                logger.info("[CPUServer]: New incoming connection at {addr}".format(addr=curr_addr))
                 try:
                     raw_message = Utils.recv_message(curr_conn)
 
                     if raw_message:
                         message = raw_message.decode()
+                        logger.info("[CPUServer]: {addr} sent: \"{msg}\"".format(addr=curr_addr, msg=message))
+
                         response = self._mother.interpret(message)
                         response_type = type(response)
 
@@ -97,19 +101,30 @@ class CPUServer:
                             response = response.encode()
 
                         Utils.send_message(curr_conn, b'exec_ok:1')
+                        logger.info("[CPUServer]: {addr} request [EXEC_OK]".format(addr=curr_addr))
+
                         Utils.send_message(curr_conn, 'data_type:{}'.format(response_type.__name__).encode())
                         Utils.send_message(curr_conn, response)
+                        logger.info("[CPUServer]: {addr} request was successfully responded with data_type {dt}"
+                                    .format(addr=curr_addr, dt=response_type.__name__))
+
                 except (ConnectionError, OSError) as e:
-                    # This should be carefully tested in the future.
+                    # TODO: This should be carefully tested in the future.
                     # Current tests indicate that this exception is due to a finalised
                     # connection at the other side.
-                    pass
+                    logger.warning("[CPUServer]: {addr} [ERROR]: {msg}".format(addr=curr_addr,
+                                                                               msg=Utils.exception_message(e)))
+
                 except EvaluationException as e:
                     Utils.send_message(curr_conn, b'exec_ok:0')
-                    Utils.send_message(curr_conn, '{err_name}:{msg}'.format(
-                        err_name=e.__class__.__name__, msg=e).encode())
+                    Utils.send_message(curr_conn, Utils.exception_message(e).encode())
+                    logger.warning("[CPUServer]: {addr} [EVALUATION_EXCEPTION]: {msg}"
+                                   .format(addr=curr_addr, msg=Utils.exception_message(e)))
+
                 finally:
                     self._mother.curr_conn.close()
+                    logger.info("[CPUServer]: {addr} connection closed.".format(addr=curr_addr))
+                    del curr_addr, curr_conn
 
     def run(self):
         self.__listen()
@@ -205,4 +220,8 @@ class Utils:
         from contextlib import closing
         with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
             return sock.connect_ex((host, port))
+
+    @staticmethod
+    def exception_message(e):
+        return '{err_name}:{msg}'.format(err_name=e.__class__.__name__, msg=e)
 

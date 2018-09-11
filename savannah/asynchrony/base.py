@@ -1,7 +1,8 @@
 import time
 from typing import TypeVar, Any, Dict, Iterable, Union
 from abc import abstractmethod, ABC
-import warnings
+
+from savannah.core.logging import logger
 
 
 __all__ = [
@@ -193,7 +194,7 @@ class LoopMixin(AsyncWrapper):
     def stop(self):
         if self.__cont: self.__cont = False
         else:
-            warnings.warn("Async object has already been stopped.", RuntimeWarning)
+            logger.warning("Async object has already been stopped.")
 
     @property
     def continue_flag(self) -> bool:

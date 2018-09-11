@@ -1,13 +1,12 @@
 from abc import ABC, abstractmethod
-import warnings
 
+from savannah.asynchrony.processes import Process, ProcessManager
 from savannah.core import environ, settings
 from savannah.core.exceptions import *
-from savannah.asynchrony.processes import Process, ProcessManager
+from savannah.core.extensions.tupperware import unbox
+from savannah.core.logging import logger
 from savannah.iounit import CPUServer, Utils as IOUtils
 from savannah.sampling.sampler import SamplingManager, Utils as SamplingUtils
-from savannah.core.extensions.tupperware import unbox
-
 
 # _BaseUnit is the base class for each Unit that must be run.
 # All instances that need to be spawned into a different process start with an underscore.
@@ -63,6 +62,7 @@ class IOUnit(_BaseUnit):
         # Now we start the threads
         self.sampling_unit.init(self.unit_manager.sampling_proxies)
         self.server.run()
+        logger.info("IOUnit has been initialized. CPUServer now running at //{0}:{1}".format(self.host, self.port))
 
 
 class SamplingUnit(_BaseUnit):
@@ -77,12 +77,13 @@ class SamplingUnit(_BaseUnit):
             except AttributeError:
                 raise MisconfiguredSettings("Some enabled sensors do not match any object in sensors.py")
 
-        if len(self.sensor_dict.keys()) == 0: warnings.warn("No sensors have been enabled.", RuntimeWarning)
+        if len(self.sensor_dict.keys()) == 0: logger.warning("No sensors have been enabled.")
 
     def init(self, sampling_proxies):
         sampler_list = SamplingUtils.make_samplers(self.sensor_dict.values())
         self.manager.propagate(sampler_list)
         self.manager.start_all(sampling_proxies)
+        logger.info("SamplingUnit has been initialized")
 
 #
 # Asynchronous Units:
