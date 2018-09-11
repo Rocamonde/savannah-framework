@@ -1,5 +1,5 @@
 import argparse
-from typing import Union
+from typing import Union, List, Iterable, Mapping
 import json
 
 from savannah.sampling import SamplingManager
@@ -18,8 +18,7 @@ class CPUInterpreter(AbstractBaseInterpreter):
         self.verify_data_types = True
         self.sampling_manager = sampling_manager
 
-    def __parse__(self, content: str) -> argparse.Namespace:
-        return self.stdparser.parse_args(content.split(' ', 2))
+
 
     def __configure__(self):
         """
@@ -31,13 +30,19 @@ class CPUInterpreter(AbstractBaseInterpreter):
         but that would be a risk if we want to open the port (easily injectable).
 
         """
-        self.stdparser.add_argument('--kwargs', nargs='?')
-        self.stdparser.add_argument('command', nargs='?')
+        self.parser.add_argument('--kwargs', nargs='?')
+        self.parser.add_argument('command', nargs='?')
 
-    def execute(self, namespace: argparse.Namespace) -> Union[str, UnrecognizedCommandError]:
+    def __pre_parse__(self, content: str) -> List:
+        return content.split(' ', 2)
+
+    def __parse__(self, content: Iterable, *args, **kwargs) -> argparse.Namespace:
+        return self.parser.parse_args(content)
+
+    def __interpret__(self, namespace: argparse.Namespace):
         try:
-            argstr = namespace.kwargs.strip() if namespace.kwargs else str()
-            parsed_args = Utils.parse_argstr(argstr) if argstr is not str() else None  # (empty str)
+            arg_str = namespace.kwargs.strip() if namespace.kwargs else str()
+            parsed_args = Utils.parse_argstr(arg_str) if arg_str is not str() else None  # (empty str)
             selected_func: function = self.mapped_commands[namespace.command]
 
             if not parsed_args:
@@ -51,13 +56,16 @@ class CPUInterpreter(AbstractBaseInterpreter):
                              for key, value in parsed_args.items())):
                 raise InvalidArgumentsError
 
-            return self.mapped_commands[namespace.command](**parsed_args)
+            return (namespace.command, parsed_args)
 
         except json.decoder.JSONDecodeError:
             raise InvalidCommandError
 
         except KeyError:
             raise UnrecognizedCommandError
+
+    def __execute__(self, method_name: str, kwargs: Mapping) -> Union[str, UnrecognizedCommandError]:
+        return self.mapped_commands[method_name](**kwargs)
 
     def __getattr__(self, item):
         if item == 'sampling_manager':

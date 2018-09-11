@@ -92,7 +92,7 @@ class CPUServer:
                         message = raw_message.decode()
                         logger.info("[CPUServer]: {addr} sent: \"{msg}\"".format(addr=curr_addr, msg=message))
 
-                        response = self._mother.interpret(message)
+                        response = self._mother.interpret_and_execute(message)
                         response_type = type(response)
 
                         if response_type not in (bytes, str):
@@ -142,8 +142,8 @@ class CPUServer:
         # Al terminal el hilo se cierra el socket.
         self.socket.close()
 
-    def interpret(self, message: str):
-        return self.__interpreter.interpret(message)
+    def interpret_and_execute(self, message: str):
+        return self.__interpreter.raw_run(message)
 
     @property
     def thread(self) -> threads.Thread:

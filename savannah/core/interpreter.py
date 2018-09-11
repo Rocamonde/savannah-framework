@@ -1,12 +1,10 @@
 import argparse
-from typing import Union, Iterable
-import json
+from typing import Union, Iterable, Mapping, Tuple
 from abc import ABCMeta, abstractmethod
 
-from savannah.sampling import SamplingManager
 
 __all__ = [
-    "AbstractBaseInterpreter",
+    "AbstractBaseInterpreter", "AbstractBaseCommand",
     "InvalidArgumentsError", "InvalidCommandError", "UnrecognizedCommandError",
     "EvaluationException"
 ]
@@ -50,44 +48,75 @@ class TypeABI(ABCMeta):
     def __call__(self, *args, **kwargs):
         obj = super().__call__(*args, **kwargs)
         if hasattr(obj, '__map__'): obj.__map__()
+        if hasattr(obj, '__configure__'): obj.__configure__()
+
         return obj
 
 
 class AbstractBaseInterpreter(metaclass=TypeABI):
     def __init__(self, *args, **kwargs):
-        self.stdparser = argparse.ArgumentParser(*args, **kwargs)
-        self.__configure__()
+        self.mapped_commands = {}
+        self.parser = argparse.ArgumentParser(*args, **kwargs)
 
-
-    @abstractmethod
-    def __parse__(self, content: Union[str, Iterable]) -> argparse.Namespace:
+    def __map__(self) -> None:
         """
-        Pre-process data for stdparser
+        Create mapping for later execution
         """
         pass
 
     @abstractmethod
     def __configure__(self):
         """
-        Configure stdparser here
+        Configure parser rules here.
+        """
+        pass
+
+    def __pre_parse__(self, content: str) -> Iterable:
+        raise NotImplementedError
+        # We don't want to force its implmenentation for instantiation,
+        # just prevent its usage without implementation.
+
+    @abstractmethod
+    def __parse__(self, content: Iterable, *args, **kwargs) -> argparse.Namespace:
+        """
+        Parse all data. Return an argparse.Namespace.
         """
         pass
 
     @abstractmethod
-    def execute(self, namespace: argparse.Namespace):
+    def __interpret__(self, namespace: argparse.Namespace) -> Tuple[str, Mapping]:
         """
-        Indicate execution tasks here
+        Implement the interpretation logic here, and return a execution binding:
+        A tuple of two elements: the method_name and a mapping with the kwargs.
+        No positional arguments are allowed in bindings (all arguments must be explicit)
+        """
+
+    @abstractmethod
+    def __execute__(self, method_name: str, kwargs: Mapping):
+        """
+        Bind mapping here and return type.
         """
         pass
 
-    def interpret(self, content: Union[str, Iterable]):
-        return self.execute(self.__parse__(content))
+    def run(self, *args, **kwargs):
+        return self.__execute__(*self.__interpret__(self.__parse__(*args, **kwargs)))
+
+    def raw_run(self, content):
+        return self.run(self.__pre_parse__(content=content))
 
 
-class BaseInterpreter(AbstractBaseInterpreter):
+class AbstractBaseCommand(metaclass=TypeABI):
+    def __init__(self, subparsers: argparse._SubParsersAction):
+        self.mapped_commands = {}
+        self.verbose_name: str = getattr(self.__class__, 'verbose_name', self.__class__.__name__)
+        self.help = getattr(self.__class__, 'help', None)
+        self.parser = subparsers.add_parser(self.verbose_name, help=self.help)
 
-    def __parse__(self, content: Iterable) -> argparse.Namespace:
-        return self.stdparser.parse_args(content)
+    @staticmethod
+    @abstractmethod
+    def action(*args, **kwargs):
+        pass
 
-    def run(self):
-        self.interpret(self.argv)
+    @abstractmethod
+    def __configure__(self):
+        pass
