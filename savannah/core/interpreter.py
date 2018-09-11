@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 
 
 __all__ = [
-    "AbstractBaseInterpreter",
+    "AbstractBaseInterpreter", "AbstractBaseCommand",
     "InvalidArgumentsError", "InvalidCommandError", "UnrecognizedCommandError",
     "EvaluationException"
 ]
@@ -48,18 +48,21 @@ class TypeABI(ABCMeta):
     def __call__(self, *args, **kwargs):
         obj = super().__call__(*args, **kwargs)
         if hasattr(obj, '__map__'): obj.__map__()
+        if hasattr(obj, '__configure__'): obj.__configure__()
+
         return obj
 
 
 class AbstractBaseInterpreter(metaclass=TypeABI):
     def __init__(self, *args, **kwargs):
+        self.mapped_commands = {}
         self.parser = argparse.ArgumentParser(*args, **kwargs)
-        self.__configure__()
 
     def __map__(self) -> None:
         """
         Create mapping for later execution
         """
+        pass
 
     @abstractmethod
     def __configure__(self):
@@ -101,3 +104,19 @@ class AbstractBaseInterpreter(metaclass=TypeABI):
     def raw_run(self, content):
         return self.run(self.__pre_parse__(content=content))
 
+
+class AbstractBaseCommand(metaclass=TypeABI):
+    def __init__(self, subparsers: argparse._SubParsersAction):
+        self.mapped_commands = {}
+        self.verbose_name: str = getattr(self.__class__, 'verbose_name', self.__class__.__name__)
+        self.help = getattr(self.__class__, 'help', None)
+        self.parser = subparsers.add_parser(self.verbose_name, help=self.help)
+
+    @staticmethod
+    @abstractmethod
+    def action(*args, **kwargs):
+        pass
+
+    @abstractmethod
+    def __configure__(self):
+        pass
