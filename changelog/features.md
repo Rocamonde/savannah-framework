@@ -40,6 +40,9 @@ Current release <0.1a1>
   - Installation tool
   - Upload logs
 
+### Current issues:
+  -  <#3> Decorator inheritance in abc subclassing
+
 ----------
 
 Other releases
