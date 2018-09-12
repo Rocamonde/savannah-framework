@@ -3,17 +3,16 @@
 #
 # Usage:
 #
-# class CPUInterpreter(BaseCommandInterpreter):
-#     def __init__(self, sampling_manager):
-#         super(CPUInterpreter, self).__init__(sampling_manager)
+# class Interpreter(CPUInterpreter):
+#     def __map__(self):
 #
-#         self.mapped_commands = {
-#             # define mapped commands here, referencing CPUInterpreter
+#         self.mapped_commands.update({
+#             # define mapped commands here, referencing an Interpreter's method.
 #             # Reference must not be executed.
-#             # Key name must correspond to the name of a method.
+#             # Key name should correspond to the name of a method.
 #
 #             'hello_world': self.hello_world,
-#         }
+#         })
 #
 #     def hello_world(self, arg1:str, arg2:int) -> str:
 #         # Specify arguments types and function return type
@@ -30,16 +29,16 @@
 # from savannah.iounit.interpreter.blueprints import JSONBaseMixin
 #
 # Mix-ins have to be included as mother classes at any order but before
-# the BaseCommandInterpreter class reference.
+# the CPUInterpreter class reference.
 # Incorrect usage can result in invalid ORM schemes.
 #
 
-from savannah.iounit.interpreter import CPUInterpreter as BaseCommandInterpreter
+from savannah.iounit.interpreter import CPUInterpreter
 
 
-class CommandInterpreter(BaseCommandInterpreter):
-    def __init__(self, sampling_manager):
-        super().__init__(sampling_manager)
+class Interpreter(CPUInterpreter):
+    def __map__(self):
 
-        self.mapped_commands = {
-        }
+        self.mapped_commands.update({
+
+        })
