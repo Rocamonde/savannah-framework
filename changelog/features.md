@@ -57,7 +57,7 @@ Features description for other than the current release:
   - User authentication (AuthUnit): NFC and Bluetooth
  
 
-## Non-schedules enhancement proposals for future versions
+## Non-scheduled enhancement proposals for future versions
 
   - Sensors that support other data types that cannot be
    easily stored in simple lists (images, sound, etc)
