@@ -3,6 +3,7 @@ from typing import TypeVar, Any, Dict, Iterable, Union
 from abc import abstractmethod, ABC
 
 from savannah.core.logging import logger
+from savannah.core.decorators import flag_setter
 
 
 __all__ = [
@@ -65,18 +66,6 @@ AsyncWrapper: wrapper for asynchronous objects management.
 """
 
 
-def set_sf_exec(flag: str, value: Any):
-    """Sets a flag attribute contained in self to the value specified after execution"""
-
-    def decorator(func):
-        def wrapper(self: object, *args, **kwargs):
-            func(*args, **kwargs)
-            self.__setattr__(flag, value)
-
-        return wrapper
-
-    return decorator
-
 
 class AsyncWrapper(ABC):
 
@@ -102,7 +91,8 @@ class AsyncWrapper(ABC):
         """Tasks to be done by the async object"""
         pass
 
-    @set_sf_exec('__started_flag', True)
+    # TODO make this work when replaced without needing to re-type the decorator
+    @flag_setter('__started_flag', True)
     @abstractmethod
     def start(self, **kwargs):
         """Start the async object"""
