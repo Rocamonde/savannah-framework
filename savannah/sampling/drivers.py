@@ -22,14 +22,10 @@ class Sensor(ABC):
 
     def __init__(self, settings: dict = None):
         # self.port = None
-        self.__is_open = False
+        self.is_open = False
         self.settings = settings or dict()
 
-    @property
-    def is_open(self):
-        return self.__is_open
-
-    @flag_setter('__is_open', True)
+    @flag_setter('is_open', True)
     @abstractmethod
     def open(self):
         pass
@@ -50,12 +46,12 @@ class Sensor(ABC):
             # Handle here errors occurring while reading data from the port
             pass
 
-    @flag_setter('__is_open', False)
+    @flag_setter('is_open', False)
     @abstractmethod
     def close(self):
         try:
             # self.port.close()
-            self.__is_open = False
+            self.is_open = False
         except:
             pass
             # Handle here errors occurring while closing the port
