@@ -66,11 +66,10 @@ AsyncWrapper: wrapper for asynchronous objects management.
 """
 
 
-
 class AsyncWrapper(ABC):
 
     def __init__(self, **kwargs) -> None:
-        self.__started_flag: bool = False
+        self.started_flag: bool = False
 
         # Fallback for object name to be lower class' name.
         # To avoid implementation conflicts, a custom name
@@ -91,8 +90,7 @@ class AsyncWrapper(ABC):
         """Tasks to be done by the async object"""
         pass
 
-    # TODO make this work when replaced without needing to re-type the decorator
-    @flag_setter('__started_flag', True)
+    @flag_setter('started_flag', True)
     @abstractmethod
     def start(self, **kwargs):
         """Start the async object"""
@@ -141,7 +139,7 @@ class AsyncWrapper(ABC):
 
     @property
     def has_begun(self) -> bool:
-        return self.__started_flag
+        return self.started_flag
 
     @property
     def is_daemon(self) -> bool:
