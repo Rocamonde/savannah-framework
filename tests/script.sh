@@ -2,5 +2,5 @@
 
 for file in *
 do
-  python "$file"
+  python "tests/$file"
 done
