@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-for file in *
+for file in tests/*
 do
-  python "tests/$file"
+  python "$file"
 done
