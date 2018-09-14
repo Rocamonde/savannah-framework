@@ -41,7 +41,11 @@ Current release <0.1a1>
   - Upload logs
 
 ### Current issues:
-  -  <#3> [Decorator inheritance in abc subclassing](https://github.com/Rocamonde/savannah-framework/issues/3)
+  - <#9>  Way to stop server \[enhancement\]
+  - <#6> Test not passing; command not recognised (errcode 600) \[bug\]
+  - <#5> Log is not written to file \[bug\]
+  - <#4> Server does not quit when logfile does not exist \[bug\]
+
 
 ----------
 
