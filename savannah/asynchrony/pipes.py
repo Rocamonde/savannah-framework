@@ -8,10 +8,7 @@
 #
 
 
-
-from networkx import Graph
-
-from typing import Tuple, Union
+from typing import Tuple
 import multiprocessing_on_dill as mp
 import multiprocessing_on_dill.connection
 import networkx as nx
