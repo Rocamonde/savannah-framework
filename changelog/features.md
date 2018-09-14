@@ -40,6 +40,9 @@ Current release <0.1a1>
   - Installation tool
   - Upload logs
 
+### Current issues:
+  -  <#3> [Decorator inheritance in abc subclassing](https://github.com/Rocamonde/savannah-framework/issues/3)
+
 ----------
 
 Other releases
@@ -57,7 +60,7 @@ Features description for other than the current release:
   - User authentication (AuthUnit): NFC and Bluetooth
  
 
-## Non-schedules enhancement proposals for future versions
+## Non-scheduled enhancement proposals for future versions
 
   - Sensors that support other data types that cannot be
    easily stored in simple lists (images, sound, etc)
