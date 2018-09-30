@@ -12,3 +12,6 @@
 
 # Virtual environments
 venv
+
+# Source files for installations
+src

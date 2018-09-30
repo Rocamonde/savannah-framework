@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 from savannah import __email__, __author__, __uri__, __description__, __name__, __version__
 
 setup(name=__name__,
@@ -7,9 +7,7 @@ setup(name=__name__,
       url=__uri__,
       author=__author__,
       author_email=__email__,
-      packages=[
-          'savannah',
-      ],
+      packages=find_packages(),
       install_requires=[
           'pandas', 'numpy', 'networkx'
       ],
