@@ -1,19 +1,11 @@
-import sys
 from os import environ
-from os.path import join, dirname, realpath
-from abc import abstractmethod
-import subprocess
-import argparse
 import ipaddress
 
 from savannah.core.exceptions import MisconfiguredSettings
-from savannah.core.logging import logger
+from savannah.core.logging.logging import logger as _logger
 from savannah.core.interpreter import AbstractBaseCommand as Command
 
 
-#
-# Define commands
-#
 
 class Run(Command):
     verbose_name = 'run'
@@ -49,11 +41,17 @@ class Run(Command):
             environ.update({
                 'LOG_DO_BRIEF': '1'
             })
+
         elif logmode in ('detailed', 'extended'):  # Both terms are sufficiently intuitive for command line
             environ.update({
                 'LOG_DO_BRIEF': '1',
                 'LOG_DO_DETAILED': '1',
             })
+
+        # After this we need to reload the logger,
+        # since we have changed environment variables that are used
+        # when it is first imported.
+        _logger.reload()
 
         # Address fetching
         # TODO: if only host is specified, port does not fall back to settings and causes int(NoneType) TypeError
@@ -91,33 +89,6 @@ class Run(Command):
         #    uploader_unit = UploaderUnit()
         #    uploader_unit.init() # TODO: this does not resolve, make init a valid method
 
-
-class CreateSettings(Command):
-    verbose_name = 'create-settings'
-    help = 'Create default settings file with pre-set values. This will replace your current settings file.'
-
-    def __configure__(self):
-        pass
-
-    @staticmethod
-    def action():
-        stub_file = join(dirname(realpath(__file__)), 'settings.pyi')
-        # Process is run from current executable to ensure that Savannah is installed
-        p = subprocess.Popen([sys.executable, stub_file], stdout=subprocess.PIPE, bufsize=1)
-        out = p.stdout.read()
-
-        CONFIG_PATH = join(environ['SAVANNAH_BASEDIR'], 'settings.json')
-        # We can't use settings import to load the config path at this point
-        # since we are trying to create the settings.
-        # An import fix could enable config path loading even if settings.json does not exist
-        # However, this could have repercussions in the way the rest of the modules
-        # are used (expecting that settings are configured when they are not),
-        # for this reason it is wiser to just define the variable at this scope.
-
-        with open(CONFIG_PATH, "wb") as file:
-            file.write(out)
-
-        logger.info("Settings have been created at {}".format(CONFIG_PATH))
 
 
 #

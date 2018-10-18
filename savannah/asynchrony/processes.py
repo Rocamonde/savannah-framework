@@ -1,8 +1,8 @@
-import multiprocessing_on_dill as mp
-from multiprocessing_on_dill import managers as _iomanagers
+import multiprocessing as mp
+from multiprocessing import managers as _iomanagers
 from abc import abstractmethod
 # from multiprocessing import managers as _iomanagers
-# import multiprocessing_on_dill.connection
+# import multiprocessing.connection
 # import multiprocessing.connection
 
 from .base import *

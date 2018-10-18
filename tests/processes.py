@@ -1,7 +1,7 @@
 import unittest
 from savannah.asynchrony import processes
 from savannah.asynchrony.pipes import PipeWrapper
-from multiprocessing_on_dill.managers import Namespace
+from multiprocessing.managers import Namespace
 import time
 import random
 
@@ -107,3 +107,6 @@ class ProcessTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+

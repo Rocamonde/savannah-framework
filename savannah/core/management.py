@@ -2,10 +2,12 @@ import argparse
 import sys
 from os import environ
 from os.path import dirname
+import traceback
 from typing import Mapping, Iterable
 
 from savannah.core.interpreter import AbstractBaseInterpreter
-from savannah.core import clicommands
+from savannah.core import cli_commands
+from savannah.core.logging import logger
 
 #
 # Recognise commands
@@ -20,7 +22,11 @@ def execute_from_command_line(argv):
     environ['SAVANNAH_BASEDIR'] = dirname(argv[0])
 
     interpreter = CLInterpreter()
-    interpreter.run(argv[1:])
+    try:
+        interpreter.run(argv[1:])
+    except Exception as exc:
+        traceback.print_exc()
+        sys.exit(1)
 
 
 class CLInterpreter(AbstractBaseInterpreter):
@@ -30,8 +36,9 @@ class CLInterpreter(AbstractBaseInterpreter):
 
     def __map__(self):
         self.mapped_commands.update({
-            'run': clicommands.Run,
-            'create-settings': clicommands.CreateSettings,
+            'run': cli_commands.run.Run,
+            'create-settings': cli_commands.create_settings.CreateSettings,
+            'test': cli_commands.test.Test
         })
 
     def __configure__(self):

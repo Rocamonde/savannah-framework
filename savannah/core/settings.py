@@ -5,11 +5,9 @@
 import os
 from savannah.core.extensions.config import Configuration
 from savannah.core.exceptions import UndefinedEnvironment
+from savannah.core import get_basedir
 
-try:
-    BASEDIR = os.environ['SAVANNAH_BASEDIR']
-except KeyError:
-    raise UndefinedEnvironment("Base directory for Savannah's runtime is not defined.")
+BASEDIR = get_basedir()
 
 CONFIG_PATH = os.path.join(BASEDIR, 'settings.json')
 

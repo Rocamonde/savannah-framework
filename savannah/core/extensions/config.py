@@ -1,8 +1,10 @@
 
 import json
 import os
+import sys
 from typing import Dict
 
+from savannah.core.logging import logger
 from savannah.core.extensions.tupperware import box, Box
 from savannah.core.exceptions import MisconfiguredSettings
 
@@ -36,9 +38,10 @@ class Configuration:
 
     def __init__(self, config_path: str = None):
         if config_path and not self.__path_exists(config_path):
-            raise OSError("Invalid path to configuration file.\n"
-                          "If settings.json does not exist in your project directory, "
-                          "You can create it by running: python manage.py create-settings")
+            logger.error("Invalid path to configuration file.\n"
+                         "If settings.json does not exist in your project directory, "
+                         "You can create it by running: python manage.py create-settings")
+            sys.exit(1)
 
         self.config_path = config_path
 

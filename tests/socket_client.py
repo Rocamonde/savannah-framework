@@ -8,3 +8,7 @@ class SocketConnection(unittest.TestCase):
         result = c.message('updates')
         print(result)
         self.assertEqual(result[0], ConnStatus.CONN_OK)
+
+
+if __name__ == '__main__':
+    unittest.main()

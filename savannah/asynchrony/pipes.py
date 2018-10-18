@@ -9,8 +9,8 @@
 
 
 from typing import Tuple
-import multiprocessing_on_dill as mp
-import multiprocessing_on_dill.connection
+import multiprocessing as mp
+import multiprocessing.connection
 import networkx as nx
 
 
@@ -143,7 +143,7 @@ class CloseCall(Exception): pass  # This is not really an error
 
 
 class PipeWrapper:
-    def __init__(self, conns: Tuple[mp.connection.PipeConnection]):
+    def __init__(self, conns: Tuple[mp.connection.Connection]):
         """
         Initialize the Pipe wrapper. In the order provided,
         first connection is always the one to be operated by the

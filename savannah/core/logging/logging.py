@@ -84,70 +84,86 @@ class DetailedFormatter(logging.Formatter):
 
             return std_bold(colour, self._fmt.format(**_record))
 
+
 #
 # Logger class
 #
 
 class Logger:
-    def __init__(self, name, blf: str = None, dlf: str = None,
+    def __init__(self, name, brief_log_file: str = None, detailed_log_file: str = None,
                  do_console: bool = None, do_brief: bool = None, do_detailed: bool = None):
+        self.name = name
         do_console = do_console or os.environ.get('LOG_DO_CONSOLE', True)
         do_brief = do_brief or os.environ.get('LOG_DO_BRIEF', False)
         do_detailed = do_detailed or os.environ.get('LOG_DO_DETAILED', False)
 
-        if do_brief or do_detailed:
-            _is = False
-            from savannah.core.exceptions import UndefinedEnvironment, MisconfiguredSettings
-
-            try:
-                from savannah.core import settings
-                global settings
-                _is = True
-            except UndefinedEnvironment:
-                if not blf or not dlf:
-                    raise TypeError("Savannah's environment is undefined. Logfile paths must be specified.")
-            finally:
-                try:
-                    # We can do this because if first element evals to True, second is not checked
-                    blf = blf or os.path.join(settings.BASEDIR, settings.log.brief.path, 'brief.log')
-                    dlf = dlf or os.path.join(settings.BASEDIR, settings.log.detailed.path, 'detailed.log')
-                    if not (os.path.exists(os.path.dirname(blf)) and os.path.exists(os.path.dirname(dlf))):
-                        raise (IOError("File's directory does not exist.") if _is
-                               else MisconfiguredSettings(MisconfiguredSettings.invalid_path))
-                except AttributeError:
-                    raise MisconfiguredSettings(MisconfiguredSettings.missing)
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
 
         if do_brief:
-            # create file handler which logs even debug messages
-            fh = logging.FileHandler(blf)
-            fh.setLevel(logging.DEBUG)
-            fh.setFormatter(BriefFormatter())
-            self.logger.addHandler(fh)
+            self.brief_path = self.check_path('brief', brief_log_file)
+            self.add_brief_handler(self.brief_path)
 
-        if do_detailed:
-            # file handler that includes detailed traceback
-            dfh = logging.FileHandler(dlf)
-            dfh.setLevel(logging.WARNING)
-            dfh.setFormatter(DetailedFormatter())
-            self.logger.addHandler(dfh)
-
-        if do_console:
-            # create console handler with a higher log level
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.INFO)
-            ch.setFormatter(ConsoleFormatter())
-            self.logger.addHandler(ch)
+        if do_detailed: self.add_detailed_handler(self.check_path('detailed', detailed_log_file))
+        if do_console: self.add_console_handler()
 
         if not bool(int(os.environ.get('LOG_SESSION_STARTED', '0'))):
             os.environ['LOG_SESSION_STARTED'] = '1'
             if do_brief or do_detailed:
-                with open(blf, "a") as target, \
+                with open(self.brief_path, "a") as target, \
                         open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "briefheader.txt"),
                              "r") as template:
 
                     target.write(template.read())
+
+    #
+    # Handlers
+
+    def add_brief_handler(self, file):
+        # create file handler which logs even debug messages
+        fh = logging.FileHandler(file)
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(BriefFormatter())
+        self.logger.addHandler(fh)
+
+    def add_detailed_handler(self, file):
+        # file handler that includes detailed traceback
+        dfh = logging.FileHandler(file)
+        dfh.setLevel(logging.WARNING)
+        dfh.setFormatter(DetailedFormatter())
+        self.logger.addHandler(dfh)
+
+    def add_console_handler(self):
+        # create console handler with a higher log level
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.INFO)
+        ch.setFormatter(ConsoleFormatter())
+        self.logger.addHandler(ch)
+
+    def reload(self): self.__init__(self.name)
+
+    #
+    # Path validity checker
+    @staticmethod
+    def check_path(_type, fallback_path):
+        _is = False
+        from savannah.core.exceptions import UndefinedEnvironment, MisconfiguredSettings
+
+        try:
+            from savannah.core import settings
+            _path = os.path.join(settings.BASEDIR, settings.log._asdict().get(_type), '{}.log'.format(_type))
+            _is = True
+        except UndefinedEnvironment:
+                if not fallback_path:
+                    raise TypeError("Savannah's environment is undefined. Logfile paths must be specified.")
+                else:
+                    _path = fallback_path
+        except AttributeError:
+            raise MisconfiguredSettings(MisconfiguredSettings.missing)
+        if not os.path.exists(os.path.dirname(_path)):
+            raise (IOError("File's directory does not exist.") if not _is
+                   else MisconfiguredSettings(MisconfiguredSettings.invalid_path))
+        return _path
 
 
 logger = Logger(__name__)
