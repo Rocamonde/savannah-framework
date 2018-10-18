@@ -40,12 +40,6 @@ Current release <0.1a1>
   - Installation tool
   - Upload logs
 
-### Current issues:
-  - <#9>  Way to stop server \[enhancement\]
-  - <#6> Test not passing; command not recognised (errcode 600) \[bug\]
-  - <#5> Log is not written to file \[bug\]
-  - <#4> Server does not quit when logfile does not exist \[bug\]
-
 
 ----------
 
