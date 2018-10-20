@@ -1,7 +1,7 @@
 import importlib.util
 import os
 from savannah.core import settings
-from savannah.core.blanks import drivers, interpreter
+from savannah.core.defaults import drivers, interpreter
 
 
 def load_module(module_name, file_name=None, file_path=None):
