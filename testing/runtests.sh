@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-python ptestl.py
-
-while read p; do
-  coverage run "$p"
-done < .testl
-
-rm .testl
+python -m unittest discover -s tests/
+coverage run --source=../savannah -m unittest discover -s tests/
+coverage report -m

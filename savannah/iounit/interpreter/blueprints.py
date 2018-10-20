@@ -22,13 +22,17 @@ class JSONUpdatesMixin(CPUInterpreter):
         List slicing does not create memory duplicates; only when
         it is dumped to JSON.
 
-        This is useful for web interfaces.
         """
         last_key = last_key or dict()
         response = {sensor_name: sampler.reader.retrieve_last(last_key.get(sensor_name, None))
                     for sensor_name, sampler in self.sampling_manager.wrappers_dict.items()}
 
-        # Careful: dates are not dumped to JSON standard format. It must be parsed.
-        # TODO: change this
+        # Note: dates are dumped with a standard Python format.
+        # This format is not automatically recognised when dates are parsed back
+        # (they're considered strings).
+        # Since there are different conventions on the date format, and
+        # JSON does not explicitly specify one, I've chosen to let dates
+        # remain in this format until any other convention is agreed.
+
         return json.dumps(response, default=str)
 

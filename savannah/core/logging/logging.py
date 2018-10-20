@@ -55,6 +55,7 @@ class DetailedStyler(logging.StrFormatStyle):
         _record['pathname'] = os.path.relpath(os.path.abspath(_record['pathname']),
                                               os.environ.get('BASEDIR', ''))
         _record['traceback'] = ''.join(produce_trace())
+        return self._fmt.format(**_record)
 
 
 BriefFormatter = BaseFormatter(
@@ -85,7 +86,7 @@ DetailedFormatter = BaseFormatter(
 #
 
 class Logger:
-    def __init__(self, name, brief_log_file: str = None, detailed_log_file: str = None,
+    def __init__(self, name, reload: bool = False, brief_log_file: str = None, detailed_log_file: str = None,
                  do_console: bool = None, do_brief: bool = None, do_detailed: bool = None):
         self.name = name
         do_console = do_console or os.environ.get('LOG_DO_CONSOLE', True)
@@ -104,13 +105,12 @@ class Logger:
         if do_detailed: self.add_detailed_handler(self.check_path('detailed', detailed_log_file))
         if do_console: self.add_console_handler()
 
-        if not bool(int(os.environ.get('LOG_SESSION_STARTED', '0'))):
+        if reload or not bool(int(os.environ.get('LOG_SESSION_STARTED', '0'))):
             os.environ['LOG_SESSION_STARTED'] = '1'
             if do_brief or do_detailed:
                 with open(self.brief_path, "a") as target, \
                         open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "briefheader.txt"),
                              "r") as template:
-
                     target.write(template.read())
 
     #
@@ -137,7 +137,7 @@ class Logger:
         ch.setFormatter(ConsoleFormatter)
         self.logger.addHandler(ch)
 
-    def reload(self): self.__init__(self.name)
+    def reload(self): self.__init__(self.name, reload=True)
 
     #
     # Path validity checker
@@ -148,9 +148,7 @@ class Logger:
 
         try:
             from savannah.core import settings
-            print(_type)
             _path = os.path.join(settings.BASEDIR, settings.log._asdict().get(_type)._asdict().get("path"), '{}.log'.format(_type))
-            print(_path)
             _is = True
         except UndefinedEnvironment:
                 if not fallback_path:
