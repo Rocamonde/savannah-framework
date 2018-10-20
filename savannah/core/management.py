@@ -6,7 +6,7 @@ import traceback
 from typing import Mapping, Iterable
 
 from savannah.core.interpreter import AbstractBaseInterpreter
-from savannah.core import cli_commands
+from savannah.core import actions
 from savannah.core.logging import logger
 
 #
@@ -36,9 +36,9 @@ class CLInterpreter(AbstractBaseInterpreter):
 
     def __map__(self):
         self.mapped_commands.update({
-            'run': cli_commands.run.Run,
-            'create-settings': cli_commands.create_settings.CreateSettings,
-            'test': cli_commands.test.Test
+            'run': actions.run.Run,
+            'create-settings': actions.create_settings.CreateSettings,
+            'test': actions.test.Test
         })
 
     def __configure__(self):
@@ -70,6 +70,6 @@ class CLInterpreter(AbstractBaseInterpreter):
 
 class App:
     def start(self, savannah_basedir, *args, **kwargs):
-        from savannah.core.cli_commands.run import Run
+        from savannah.core.actions.run import Run
         environ['SAVANNAH_BASEDIR'] = savannah_basedir
         Run.action(*args, **kwargs)
