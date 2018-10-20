@@ -10,7 +10,7 @@ from savannah.sampling.sampler import SamplingManager, Utils as SamplingUtils
 
 # _BaseUnit is the base class for each Unit that must be run.
 # All instances that need to be spawned into a different process start with an underscore.
-# _BaseUnitProcess is the actual, insulated process.
+# _BaseUnitProcess is the actual, isolated process.
 
 
 #

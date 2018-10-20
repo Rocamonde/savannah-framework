@@ -3,7 +3,7 @@
 python ptestl.py
 
 while read p; do
-  python "$p"
+  coverage run "$p"
 done < .testl
 
 rm .testl
