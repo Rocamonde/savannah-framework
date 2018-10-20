@@ -3,3 +3,5 @@ numpy==1.15.1
 pandas==0.23.4
 pyyaml==3.13
 codecov==2.0.15
+pytest==3.9.1
+pytest-cov==2.6.0

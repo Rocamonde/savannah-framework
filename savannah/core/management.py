@@ -1,7 +1,7 @@
 import argparse
 import sys
 from os import environ
-from os.path import dirname
+from os.path import dirname, realpath
 import traceback
 from typing import Mapping, Iterable
 
@@ -65,3 +65,11 @@ class CLInterpreter(AbstractBaseInterpreter):
 
     def __execute__(self, method_name: str, kwargs: Mapping):
         return self.mapped_commands[method_name].action(**kwargs)
+
+
+
+class App:
+    def start(self, savannah_basedir, *args, **kwargs):
+        from savannah.core.cli_commands.run import Run
+        environ['SAVANNAH_BASEDIR'] = savannah_basedir
+        Run.action(*args, **kwargs)

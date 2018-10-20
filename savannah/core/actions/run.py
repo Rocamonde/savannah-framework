@@ -34,6 +34,8 @@ class Run(Command):
         from savannah.core import settings
         from savannah.core.units import IOUnit, LocalUIUnit, AuthUnit, UploaderUnit
 
+        assert isinstance(serverhost, str)
+
         #
         # We set the log mode
 
@@ -54,7 +56,7 @@ class Run(Command):
         _logger.reload()
 
         # Address fetching
-        # TODO: if only host is specified, port does not fall back to settings and causes int(NoneType) TypeError
+
         try:
             settings_addr = {}
             settings_addr['iounit'] = _get_split_pair(serverhost, serverport) if serverhost else \
@@ -100,7 +102,10 @@ def _get_split_pair(host: str, port: str = None):
     try:
         return host.split(':')[0], int(host.split(':')[1])
     except IndexError:
-        return host, int(port)
+        try:
+            return host, int(port)
+        except TypeError:
+            return None
 
 def _validate_addr(d: dict):
     _d = {}
