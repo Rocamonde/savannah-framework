@@ -45,16 +45,14 @@ class CPUInterpreter(AbstractBaseInterpreter):
             parsed_args = Utils.parse_argstr(arg_str) if arg_str is not str() else None  # (empty str)
             selected_func: function = self.mapped_commands[namespace.command]
 
-            if not parsed_args:
-                return selected_func()
+            if parsed_args:
+                if not set(parsed_args.keys()) < set(selected_func.__code__.co_varnames):
+                    raise InvalidArgumentsError
 
-            if not set(parsed_args.keys()) < set(selected_func.__code__.co_varnames):
-                raise InvalidArgumentsError
-
-            if self.verify_data_types and \
-                    (not all(type(value) is selected_func.__annotations__.get(key)
-                             for key, value in parsed_args.items())):
-                raise InvalidArgumentsError
+                if self.verify_data_types and \
+                        (not all(type(value) is selected_func.__annotations__.get(key)
+                                 for key, value in parsed_args.items())):
+                    raise InvalidArgumentsError
 
             return (namespace.command, parsed_args)
 
@@ -65,7 +63,7 @@ class CPUInterpreter(AbstractBaseInterpreter):
             raise UnrecognizedCommandError
 
     def __execute__(self, method_name: str, kwargs: Mapping) -> Union[str, UnrecognizedCommandError]:
-        return self.mapped_commands[method_name](**kwargs)
+        return self.mapped_commands[method_name](**kwargs) if kwargs else self.mapped_commands[method_name]()
 
     def __getattr__(self, item):
         if item == 'sampling_manager':

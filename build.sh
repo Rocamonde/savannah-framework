@@ -4,4 +4,5 @@
 python setup.py install
 
 # Run tests
-sh testing/runtests.sh
+cd testing
+sh runtests.sh

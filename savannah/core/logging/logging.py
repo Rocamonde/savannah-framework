@@ -24,65 +24,60 @@ def produce_trace():
 # Custom format styles and formatters
 #
 
-class BriefFormatter(logging.Formatter):
-    def __init__(self, fmt=None, datefmt=None, style='{'):
-        #  Brief formatting includes context and file information, but does not include traceback.
-        fmt = fmt or '| {pathname:<40} | {asctime} | {lineno:>05d} | {funcName:^14} | {levelname:>10}: {message}'
-        datefmt = datefmt or '%Y/%m/%d %H:%M:%S'
+class BaseFormatter(logging.Formatter):
+    def __init__(self, fmt=None, datefmt=None, style='{', styler=logging.StrFormatStyle):
         super().__init__(fmt=fmt, datefmt=datefmt, style=style)
-        self._style = BriefFormatter.Style(fmt)
+        self._style = styler(fmt)
 
-    class Style(logging.StrFormatStyle):
-        def format(self, record):
-            _record = dict(record.__dict__)
-            _record['pathname'] = os.path.relpath(os.path.abspath(_record['pathname']), os.environ.get('BASEDIR', ''))
-            return self._fmt.format(**_record)
+# Stylers
+#
+
+class BriefStyler(logging.StrFormatStyle):
+    def format(self, record):
+        _record = dict(record.__dict__)
+        _record['pathname'] = os.path.relpath(os.path.abspath(_record['pathname']), os.environ.get('BASEDIR', ''))
+        return self._fmt.format(**_record)
+
+class ConsoleStyler(BriefStyler):
+    def format(self, record):
+        colour = {
+            'WARNING': 'YELLOW',
+            'ERROR': 'RED',
+            'CRITICAL': 'MAGENTA',
+            'INFO': 'BLUE',
+            'DEBUG': 'CYAN'
+        }[record.__dict__['levelname']]
+        return std_bold(colour, super().format(record))
+
+class DetailedStyler(logging.StrFormatStyle):
+    def format(self, record):
+        _record = dict(record.__dict__)
+        _record['pathname'] = os.path.relpath(os.path.abspath(_record['pathname']),
+                                              os.environ.get('BASEDIR', ''))
+        _record['traceback'] = ''.join(produce_trace())
 
 
-class ConsoleFormatter(logging.Formatter):
-    def __init__(self, fmt=None, datefmt=None, style='{'):
-        # Console formatting includes only basic information.
-        fmt = fmt or '* {filename}: [{levelname:^8}] |  {message}'
-        datefmt = datefmt or '%Y/%m/%d %H:%M:%S'
-        super().__init__(fmt=fmt, datefmt=datefmt, style=style)
-        self._style = ConsoleFormatter.Style(fmt)
+BriefFormatter = BaseFormatter(
+    fmt='| {pathname:<40} | {asctime} | {lineno:>05d} | {funcName:^14} | {levelname:>10}: {message}',
+    datefmt='%Y/%m/%d %H:%M:%S',
+    styler=BriefStyler)
 
-    class Style(logging.StrFormatStyle):
-        def format(self, record):
-            _record = dict(record.__dict__)
-            _record['pathname'] = os.path.relpath(os.path.abspath(_record['pathname']), os.environ.get('BASEDIR', ''))
-            return self._fmt.format(**_record)
+ConsoleFormatter = BaseFormatter(
+    fmt='* {filename}: [{levelname:^8}] |  {message}',
+    datefmt='%Y/%m/%d %H:%M:%S',
+    styler=BriefStyler)
 
 
-class DetailedFormatter(logging.Formatter):
-    def __init__(self, fmt=None, datefmt=None, style='{', style_class: logging.StrFormatStyle = None):
-        # Detailed formatter includes thread name, process name, traceback. Enabled for warnings or worse
-        fmt = fmt or ('#  @ {asctime}, line {lineno:>05d} in {funcName}, \n'
-                      '*  File path: "{pathname}", \n'
-                      '*  Process: {processName}, Thread: {threadName} \n'
-                      '$  {levelname:<10}: {message} \n\n'
-                      '{traceback}')
-        fmt = '*.'*60 + '\n' + fmt + '*.'*60 + '\n\n\n'
-        datefmt = datefmt or '%Y/%m/%d %H:%M:%S'
-        super().__init__(fmt=fmt, datefmt=datefmt, style=style)
-        self._style = DetailedFormatter.Style(fmt)
+_fmt = ('#  @ {asctime}, line {lineno:>05d} in {funcName}, \n'
+       '*  File path: "{pathname}", \n'
+       '*  Process: {processName}, Thread: {threadName} \n'
+       '$  {levelname:<10}: {message} \n\n'
+       '{traceback}')
+_fmt = '*.' * 60 + '\n' + _fmt + '*.' * 60 + '\n\n\n'
+DetailedFormatter = BaseFormatter(
+    fmt=_fmt, datefmt='%Y/%m/%d %H:%M:%S', styler=DetailedStyler)
 
-    class Style(logging.StrFormatStyle):
-        def format(self, record):
-            _record = dict(record.__dict__)
-            _record['pathname'] = os.path.relpath(os.path.abspath(_record['pathname']),
-                                                  os.environ.get('BASEDIR', ''))
-            _record['levelname'] = '[{}]'.format(_record['levelname'])
-            _record['traceback'] = ''.join(produce_trace())
-            colour = {
-                'WARNING': 'YELLOW',
-                'ERROR': 'RED',
-                'CRITICAL': 'MAGENTA',
-                'INFO': 'BLUE',
-                'DEBUG': 'CYAN'
-            }[_record['levelname']]
 
-            return std_bold(colour, self._fmt.format(**_record))
 
 
 #
@@ -99,6 +94,8 @@ class Logger:
 
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
+
+        self.logger.handlers = []  # This is needed for a re-load
 
         if do_brief:
             self.brief_path = self.check_path('brief', brief_log_file)
@@ -123,21 +120,21 @@ class Logger:
         # create file handler which logs even debug messages
         fh = logging.FileHandler(file)
         fh.setLevel(logging.DEBUG)
-        fh.setFormatter(BriefFormatter())
+        fh.setFormatter(BriefFormatter)
         self.logger.addHandler(fh)
 
     def add_detailed_handler(self, file):
         # file handler that includes detailed traceback
         dfh = logging.FileHandler(file)
         dfh.setLevel(logging.WARNING)
-        dfh.setFormatter(DetailedFormatter())
+        dfh.setFormatter(DetailedFormatter)
         self.logger.addHandler(dfh)
 
     def add_console_handler(self):
         # create console handler with a higher log level
         ch = logging.StreamHandler()
         ch.setLevel(logging.INFO)
-        ch.setFormatter(ConsoleFormatter())
+        ch.setFormatter(ConsoleFormatter)
         self.logger.addHandler(ch)
 
     def reload(self): self.__init__(self.name)
@@ -151,7 +148,9 @@ class Logger:
 
         try:
             from savannah.core import settings
-            _path = os.path.join(settings.BASEDIR, settings.log._asdict().get(_type), '{}.log'.format(_type))
+            print(_type)
+            _path = os.path.join(settings.BASEDIR, settings.log._asdict().get(_type)._asdict().get("path"), '{}.log'.format(_type))
+            print(_path)
             _is = True
         except UndefinedEnvironment:
                 if not fallback_path:

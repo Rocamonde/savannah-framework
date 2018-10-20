@@ -50,7 +50,7 @@ class IOUnit(_BaseUnit):
 
         # We initialize the SamplingUnit so it can be passed to the interpreter
         self.sampling_unit = SamplingUnit()
-        command_interpreter = environ.load_interpreter().CPUInterpreter(self.sampling_unit.manager)
+        command_interpreter = environ.load_interpreter().Interpreter(self.sampling_unit.manager)
         self.server = CPUServer(self.host, self.port, command_interpreter)
 
         # We initialize the UnitManager

@@ -52,7 +52,7 @@ class Configuration:
             try:
                 out = json.load(file)
             except json.decoder.JSONDecodeError as exc:
-                raise MisconfiguredSettings(MisconfiguredSettings.missing) from exc
+                raise MisconfiguredSettings(MisconfiguredSettings.json_format) from exc
         return out
 
     def load(self, config_path: str):
