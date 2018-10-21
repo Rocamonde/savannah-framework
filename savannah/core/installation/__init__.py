@@ -5,7 +5,7 @@
 # 3. Run settings creation
 #
 
-from os import environ
+from os import environ, getcwd
 from os.path import dirname, join, realpath, abspath
 import sys
 import traceback
@@ -18,7 +18,7 @@ def execute_from_command_line(argv):
     if not (sys.version_info[0] == 3 and sys.version_info[1] >= 6):
         raise RuntimeError("This script requires Python version 3.6 or greater")
 
-    environ['SAVANNAH_INSTALLATION_BASEDIR'] = realpath(dirname(argv[0]))
+    environ['SAVANNAH_INSTALLATION_BASEDIR'] = abspath(realpath(getcwd()))
     environ['SAVANNAH_FRAMEWORK_DIR'] = abspath(join(dirname(realpath(__file__)), '..', '..'))
 
     interpreter = InstallationInterpreter()

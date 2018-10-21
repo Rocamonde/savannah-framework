@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from savannah.asynchrony.processes import Process, ProcessManager
-from savannah.core import environ, settings
+from savannah.core import environ
 from savannah.core.exceptions import *
 from savannah.core.extensions.tupperware import unbox
 from savannah.core.logging import logger
@@ -17,9 +17,20 @@ from savannah.sampling.sampler import SamplingManager, Utils as SamplingUtils
 # Abstract Base Classes Definition
 #
 
+# TODO: fix closing. It takes more than that to stop the app appropriately.
+# TODO... there should be two closing modes: a clean mode
+# TODO... that uploads remaining data, and executes remaining tasks
+# TODO... and another that kills the app on the spot.
+# TODO... timeout feature is also interesting but be careful because
+# TODO... many times after timeout there is no force kill.
+
 class _BaseUnit(ABC):
     @abstractmethod
     def init(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def stop(self):
         pass
 
 class _BaseUnitProcess(Process):
@@ -64,9 +75,13 @@ class IOUnit(_BaseUnit):
         self.server.run()
         logger.info("IOUnit has been initialized. CPUServer now running at //{0}:{1}".format(self.host, self.port))
 
+    def stop(self):
+        self.server.close()
+        self.sampling_unit.stop()
 
 class SamplingUnit(_BaseUnit):
     def __init__(self):
+        from savannah.core import settings
         self.manager = SamplingManager()
         self.sensor_dict = {}
         drivers_module = environ.load_drivers()
@@ -84,6 +99,10 @@ class SamplingUnit(_BaseUnit):
         self.manager.propagate(sampler_list)
         self.manager.start_all(sampling_proxies)
         logger.info("SamplingUnit has been initialized")
+
+
+    def stop(self):
+        self.manager.stop_all()
 
 #
 # Asynchronous Units:

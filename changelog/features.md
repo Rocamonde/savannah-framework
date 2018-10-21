@@ -24,7 +24,7 @@ Current release <0.1a1>
   - Shared queues to easily synchronize data
  
 ### Not implemented:
-  
+  - Ability to programmatically close server properly.
   - Automatic data dumping to a file with custom frequency or when 
   memory gets full
   - UploaderUnit integration with SamplingUnit to upload file 

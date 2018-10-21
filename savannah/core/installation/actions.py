@@ -2,9 +2,11 @@ from savannah.core.interpreter import AbstractBaseCommand as Command
 import re
 import argparse
 import os
+import shutil
 import sys
 import fnmatch
 from savannah.core.exceptions import UndefinedEnvironment
+from savannah.core.actions.create_settings import CreateSettings
 import yaml
 import datetime
 
@@ -28,28 +30,34 @@ class Init(Command):
                                       'Suitable for automated tasks.')
         self.parser.add_argument('--testing', action='store_true',
                                  help='Create an environment tailored for running tests. ')
+        self.parser.add_argument('--replace', action='store_true',
+                                 help='Remove folder with same name if any before creating project. ')
         self.parser.add_argument('project_name', type=_validProjName,
                                  help='Project name. This will be used to '
                                       'create the folder and the default files')
 
     @staticmethod
-    def action(project_name: str, noinput: bool = False, testing: bool = False):
+    def action(project_name: str, noinput: bool = False, testing: bool = False, replace: bool = False):
         try:
             running_path = os.environ['SAVANNAH_INSTALLATION_BASEDIR']
-            savannah_path = os.environ['SAVANNAH_FRAMEWORK_DIR']
+            lib_path = os.environ['SAVANNAH_FRAMEWORK_DIR']
         except KeyError as exc:
             raise UndefinedEnvironment("Savannah installation environment variables are undefined. "
                                        "Cannot run installation.") from exc
 
         proj_folder = os.path.join(running_path, project_name)
-        defaults_folder = os.path.join(savannah_path, 'core', 'defaults')
+        defaults_folder = os.path.join(lib_path, 'core', 'defaults')
 
         #
         # We first check if the folder already exists, before going further on
 
         if os.path.exists(proj_folder):
-            print("Path already exists. Please, choose a different name or folder.\n")
-            sys.exit(1)
+            if not replace:
+                print("Path already exists. Please, choose a different name or folder.\n")
+                sys.exit(1)
+            else:  # For the sake of readability
+                # Remove tree if already exists and `--replace` argument was called.
+                shutil.rmtree(proj_folder)
 
         #
         # Now we get information for the project
@@ -101,7 +109,7 @@ class Init(Command):
                 for key, val in project_data.items():
                     c = c.replace('{'+key+'}', val)
                 destfile.write(c)
-                print("Writing {} ... done".format(file))
+                print("Writing {} ... done".format(destination))
 
         # Create project information file
         with open(os.path.join(proj_folder, ".spinf.yaml"), "w+") as file:
@@ -117,4 +125,5 @@ class Init(Command):
         # TODO...An additional tweak is necessary to create empty
         # TODO...directories before copying files in case of nested directories.
 
-
+        CreateSettings.action(path=proj_folder)
+        os.mkdir(os.path.join(proj_folder, 'logs/'))

@@ -5,7 +5,8 @@
 python setup.py develop
 
 # Install standard environment
-savannah init test-project --noinput --testing
+savannah init --noinput --testing --replace test-project
+
 
 # Run tests
 pytest --cov=savannah

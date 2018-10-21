@@ -64,7 +64,7 @@ BriefFormatter = BaseFormatter(
     styler=BriefStyler)
 
 ConsoleFormatter = BaseFormatter(
-    fmt='* {filename}: [{levelname:^8}] |  {message}',
+    fmt='{filename}: {levelname:^}: {message}',
     datefmt='%Y/%m/%d %H:%M:%S',
     styler=BriefStyler)
 

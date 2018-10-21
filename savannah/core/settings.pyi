@@ -77,7 +77,7 @@ sensors: Sensors = Sensors()
 
 class Log(NamedTuple):
     class LogType(NamedTuple):
-        path: str = 'log/'
+        path: str = 'logs/'
         enabled: bool = True
 
     brief: LogType = LogType()
@@ -111,13 +111,12 @@ CONFIG_PATH: str
 if __name__ == '__main__':
     import json
     import sys
-    # ONLY FOR DEBUG
-    sys.path.append("/Users/rocamonde/PyCharmProjects/savannah-framework")
     from savannah.core.extensions.tupperware import unbox
 
     __vars = {key: unbox(val) for key, val in globals().items() if key in enabled_fields}
 
     print(json.dumps(__vars, indent=4))
+    sys.exit(0)
 
 
 # Here the rest of the variable definitions shall remain

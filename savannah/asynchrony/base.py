@@ -180,9 +180,11 @@ class LoopMixin(AsyncWrapper):
             time.sleep(self.__interval)
 
     def stop(self):
-        if self.__cont: self.__cont = False
+        if self.__cont:
+            self.__cont = False
         else:
             logger.warning("Async object has already been stopped.")
+        self.wait()
 
     @property
     def continue_flag(self) -> bool:

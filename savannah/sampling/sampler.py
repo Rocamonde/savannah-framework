@@ -200,6 +200,10 @@ class SamplingManager(threads.ReverseManagerMixin):
         for sampler in self.wrappers_list:
             sampler.start(queue_proxy=sampling_proxies[sampler.reader.sensor.name()])
 
+    def stop_all(self):
+        for sampler in self.wrappers_list:
+            sampler.stop()
+            SensorSampler().stop()
 
 class Utils:
     make_sampler = lambda sensor: SensorSampler(SensorReader(sensor))

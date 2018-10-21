@@ -1,6 +1,6 @@
 import sys
 from os import environ
-from os.path import join, dirname, realpath
+from os.path import join, dirname, realpath, abspath
 import subprocess
 
 from savannah.core.logging import logger
@@ -15,12 +15,12 @@ class CreateSettings(Command):
         pass
 
     @staticmethod
-    def action():
-        stub_file = join(dirname(realpath(__file__)), 'settings.pyi')
+    def action(path=None):
+        stub_file = abspath(join(dirname(realpath(__file__)), '..', 'settings.pyi'))
         # Process is run from current executable to ensure that Savannah is installed
         try:
             out = subprocess.check_output([sys.executable, stub_file], stderr=subprocess.STDOUT)
-            CONFIG_PATH = join(environ['SAVANNAH_BASEDIR'], 'settings.json')
+            CONFIG_PATH = join(path, 'settings.json') if path else join(environ['SAVANNAH_BASEDIR'], 'settings.json')
             # We can't use settings import to load the config path at this point
             # since we are trying to create the settings.
             # An import fix could enable config path loading even if settings.json does not exist

@@ -15,3 +15,6 @@ venv
 
 # Source files for installations
 src
+
+# Python cache
+*__pycache__*

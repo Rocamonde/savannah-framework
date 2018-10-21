@@ -53,6 +53,7 @@ class CPUServer:
         self.__interpreter = interpreter
 
         self.socket = socket.socket()
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.host = host
         self.port = port
         self.backlog = backlog
@@ -65,11 +66,11 @@ class CPUServer:
         self.socket.bind((self.host, self.port))
 
     def __listen(self):
-        # Esta llamada comienza a admitir conexiones que se añaden a una cola de conexiones entrantes.
-        # Cuando se ejecuta .accept, se aceptan las conexiones en orden de inclusión.
-        # El backlog es el número máximo de conexiones que aguardan en la cola sin haber sido aceptadas todavía.
-        # Esta llamada no es de bloqueo, el socket ya corre en un proceso subyacente para escuchar conexiones.
-        # La llamada de bloqueo es la aceptación de cada conexión.
+        # This call starts to admit incoming connections that are added into a queue.
+        # When `.accept` is executed, connections start to be accepted in order of inclusion.
+        # Backlog is the maximum number of connections that can await in the queue without
+        # having been accepted yet. This call does not block. Socket will listen in another
+        # thread. What blocks is accepting a connection (if there are no connections awaiting).
 
         self.socket.listen(self.backlog)
 
@@ -82,13 +83,18 @@ class CPUServer:
         def task(self):
             while not self._mother.close_flag:
 
-                # The following statement blocks:
+                # The following statement blocks when there are no connections in the queue.
+                # If the server flag to stop has been changed, to make the loop break we only
+                # need to send a connection with some empty message.
+
                 self._mother.curr_conn, self._mother.curr_addr = curr_conn, curr_addr = self._mother.socket.accept()
                 logger.info("[CPUServer]: New incoming connection at {addr}".format(addr=curr_addr))
                 try:
                     raw_message = Utils.recv_message(curr_conn)
 
-                    if raw_message:
+                    # The empty connection to close the thread can contain anything, but using
+                    # a conventional word saves up time since the interpreter is not involved.
+                    if raw_message and raw_message != b'NEXT':
                         message = raw_message.decode()
                         logger.info("[CPUServer]: {addr} sent: \"{msg}\"".format(addr=curr_addr, msg=message))
 
@@ -128,16 +134,20 @@ class CPUServer:
 
     def run(self):
         self.__listen()
-
-        # Este loop sí bloquea el flujo, por lo que aquí es cuando es necesario incluirlo en un subproceso.
         self.__thread = CPUServer.BackgroundLoop(self)
         self.__thread.start()
 
     def close(self, timeout=None):
         self.close_flag = True
-        # el añadir esta bandera finaliza el loop, pero tenemos que esperar hasta que termine la última conexión;
-        # por ello usamos .join()
-        self.__thread.thread.join(timeout=timeout)
+        # This will set a flag that the loop will check after finalizing the last connection.
+        # Most commonly there will be no connections awaiting and the acceptance call will block,
+        # so the flag will most likely be changed in this moment.
+        # To fix this we send an empty connection.
+        self.thread.thread.join(timeout=0.5)
+        if self.thread.is_running:
+            CPUClient(self.host, self.port).message('NEXT')
+
+        self.thread.thread.join(timeout=timeout)
 
         # Al terminal el hilo se cierra el socket.
         self.socket.close()

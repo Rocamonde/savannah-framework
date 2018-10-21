@@ -70,10 +70,3 @@ class CLInterpreter(AbstractBaseInterpreter):
     def __execute__(self, method_name: str, kwargs: Mapping):
         return self.mapped_commands[method_name].action(**kwargs)
 
-
-
-class App:
-    def start(self, savannah_basedir, *args, **kwargs):
-        from savannah.core.actions.run import Run
-        environ['SAVANNAH_BASEDIR'] = savannah_basedir
-        Run.action(*args, **kwargs)

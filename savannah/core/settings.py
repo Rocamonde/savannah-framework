@@ -2,6 +2,12 @@
 # File for dynamically importing constants from settings
 #
 
+#
+# THIS FILE MUST ALWAYS BE IMPORTED IN EXECUTION SCOPES
+# OR ELSE IT WILL TEND TO CRASH THE RUNTIME SINCE IMPORT
+# FREQUENTLY HAPPENS BEFORE ENVIRONMENT VARIABLES ARE DEFINED
+#
+
 import os
 from savannah.core.extensions.config import Configuration
 from savannah.core.exceptions import UndefinedEnvironment
