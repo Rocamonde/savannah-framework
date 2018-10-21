@@ -12,10 +12,10 @@ setup(
     install_requires=[
         # These are the requisites for an official installation.
         # requirements.txt indicates requirements for testing and development.
-        'networkx==2.1',
-        'numpy==1.15.1',
-        'pandas==0.23.4',
-        'pyyaml==3.13',
+        # 'networkx==2.1',
+        # 'numpy==1.15.1',
+        # 'pandas==0.23.4',
+        # 'pyyaml==3.13',
     ],
     scripts=['bin/savannah', ],
     zip_safe=False)
