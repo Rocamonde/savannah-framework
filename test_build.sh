@@ -5,7 +5,8 @@
 python setup.py develop
 
 # Install standard environment
-python
+savannah init test-project --noinput --testing
+
 # Run tests
 pytest --cov=savannah
 exit_code="$?"

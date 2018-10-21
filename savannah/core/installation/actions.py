@@ -23,13 +23,17 @@ class Init(Command):
     help = "Initialize savannah project in the current folder"
 
     def __configure__(self):
-
+        self.parser.add_argument('--noinput', action='store_true',
+                                 help='Do not ask for user input. '
+                                      'Suitable for automated tasks.')
+        self.parser.add_argument('--testing', action='store_true',
+                                 help='Create an environment tailored for running tests. ')
         self.parser.add_argument('project_name', type=_validProjName,
                                  help='Project name. This will be used to '
                                       'create the folder and the default files')
 
     @staticmethod
-    def action(project_name: str):
+    def action(project_name: str, noinput: bool = False, testing: bool = False):
         try:
             running_path = os.environ['SAVANNAH_INSTALLATION_BASEDIR']
             savannah_path = os.environ['SAVANNAH_FRAMEWORK_DIR']
@@ -56,11 +60,12 @@ class Init(Command):
             'project_owner.email': 'Email',
         }
 
-        print(intro_phrase, "\n")
-        for key, val in project_data.items():
-            project_data[key] = input(val+': ')
+        if not noinput: print(intro_phrase, "\n")
 
-        print("There we go!")
+        for key, val in project_data.items():
+            project_data[key] = input(val+': ') if not noinput else 'undefined'
+
+        if not noinput: print("There we go!")
 
         project_data.update({
             'project_name': project_name,
