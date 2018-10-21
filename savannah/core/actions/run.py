@@ -5,7 +5,9 @@ from savannah.core.exceptions import MisconfiguredSettings
 from savannah.core.logging.logging import logger as _logger
 from savannah.core.interpreter import AbstractBaseCommand as Command
 
-
+#
+# TODO: add types to the argument parsing to facilitate data processing and separate it from the logic
+#
 
 class Run(Command):
     verbose_name = 'run'

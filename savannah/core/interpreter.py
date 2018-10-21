@@ -1,3 +1,7 @@
+#
+# Main file where base classes for other interpreter.py files are defined
+#
+
 import argparse
 from typing import Union, Iterable, Mapping, Tuple
 from abc import ABCMeta, abstractmethod

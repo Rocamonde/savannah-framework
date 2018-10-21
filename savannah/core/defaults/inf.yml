@@ -1,0 +1,13 @@
+
+# Allowed variables to use in defaults formatting
+# that will be interpreted when creating a project
+allowed_expressions:
+  - project_name
+  - creation_date
+
+# Ignore the following files from this directory
+# Anything that matchs standard command line expressions
+# All paths must be relative to this file
+ignore:
+  - inf.yml
+  - __pycache__*

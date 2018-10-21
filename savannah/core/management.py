@@ -1,13 +1,12 @@
 import argparse
 import sys
 from os import environ
-from os.path import dirname, realpath
+from os.path import dirname
 import traceback
 from typing import Mapping, Iterable
 
 from savannah.core.interpreter import AbstractBaseInterpreter
 from savannah.core import actions
-from savannah.core.logging import logger
 
 #
 # Recognise commands
@@ -31,8 +30,9 @@ def execute_from_command_line(argv):
 
 class CLInterpreter(AbstractBaseInterpreter):
 
-    def __init__(self, argv=None):
-        super().__init__(prog='manage.py')
+    def __init__(self, *args, **kwargs):
+        if args or kwargs: super().__init__(*args, **kwargs)
+        else: super().__init__(prog='manage.py')
 
     def __map__(self):
         self.mapped_commands.update({
@@ -54,6 +54,10 @@ class CLInterpreter(AbstractBaseInterpreter):
 
     def __parse__(self, content: Iterable, *args, **kwargs) -> argparse.Namespace:
         # content[0] contains the command name, content[1:] contains the command arguments
+        if len(content) < 1:
+            self.parser.print_help(sys.stderr)
+            sys.exit(1)
+
         result = self.parser.parse_args(content)
         result.__setattr__('command_name', content[0])
         return result

@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
 # Install package
-python setup.py install
+# Develop must be included to be able to run the code coverage
+python setup.py develop
 
+# Install standard environment
+python
 # Run tests
 pytest --cov=savannah
 exit_code="$?"
