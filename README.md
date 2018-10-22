@@ -3,7 +3,7 @@ This is Savannah version 0.1 alpha 1
 
 [![Build Status](https://travis-ci.com/Rocamonde/savannah-framework.svg?token=mj7qmAwgUFUQspn2yVVx&branch=master)](https://travis-ci.com/Rocamonde/savannah-framework)
 [![codecov](https://codecov.io/gh/Rocamonde/savannah-framework/branch/master/graph/badge.svg?token=JBt4LgqTrm)](https://codecov.io/gh/Rocamonde/savannah-framework)
-
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/ee8c08a9ed8e4193b03a3e8837c55d1a)](https://www.codacy.com?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Rocamonde/savannah-framework&amp;utm_campaign=Badge_Grade)
 
 ### Savannah is a telemetry framework for advanced real-time data harvesting and monitoring. 
 
