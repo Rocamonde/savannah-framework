@@ -10,4 +10,3 @@ This is Savannah version 0.1 alpha 0
 
 This repository, Savannah and all the code contained herein is of exclusive property of J. C. Rocamonde unless explicitly stated in the package information. The material is copyrighted and all rights are reserved.
 
-
